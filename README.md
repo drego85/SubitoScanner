@@ -90,6 +90,16 @@ python3 subito_scanner.py
 
 The script will check for new items based on your queries and send notifications accordingly.
 
+### Dry-Run Mode (Simulation)
+
+You can run the script in dry-run mode to check the search results without sending any notifications.
+This is useful when adding new queries and you want to see the results before enabling real notifications.
+
+Example:
+```bash
+python3 subito_scanner.py --dry-run
+```
+
 ### Automation with Cron
 
 To run the script periodically, you can set up a cron job. For example, to run the script every hour:

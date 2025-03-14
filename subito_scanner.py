@@ -6,6 +6,7 @@ import Config
 import smtplib
 import logging
 import requests
+import argparse
 import email.utils
 from datetime import datetime
 from email.message import EmailMessage
@@ -147,7 +148,18 @@ def send_telegram_message(item_title, item_price, item_url, item_image):
     except requests.exceptions.RequestException as e:
         logging.error(f"Error sending Telegram message: {e}")
 
-def main():
+# Function to parse command-line arguments
+def parse_args():
+    parser = argparse.ArgumentParser(description="Subito Scanner - Automated search with notifications.")
+    # Add --dry-run flag to enable dry-run mode
+    parser.add_argument('--dry-run', action='store_true', help='Run in test mode (no notifications will be sent).')
+    return parser.parse_args()
+
+def main(args):
+    # If dry-run mode is active, notify the user
+    if args.dry_run:
+        print("\n⚙️  DRY-RUN MODE ENABLED: No notifications will be sent, results will be printed only.\n")
+
     # Load the list of previously analyzed items
     load_analyzed_item()
 
@@ -177,22 +189,25 @@ def main():
 
                 # Check if the item has already been analyzed to prevent duplicates
                 if item_id not in list_analyzed_items:
+                    if args.dry_run:
+                        print(f"[DRY-RUN] Trovato oggetto: {item_title} - {item_url}")
+                    else:
+                        # Send e-mail notifications if configured
+                        if Config.smtp_username and Config.smtp_server:
+                            send_email(item_title, item_price, item_url, item_image)
 
-                    # Send e-mail notifications if configured
-                    if Config.smtp_username and Config.smtp_server:
-                        send_email(item_title, item_price,item_url, item_image)
+                        # Send Slack notifications if configured
+                        if Config.slack_webhook_url:
+                            send_slack_message(item_title, item_price, item_url, item_image)
 
-                    # Send Slack notifications if configured
-                    if Config.slack_webhook_url:
-                        send_slack_message(item_title, item_price, item_url, item_image)
-
-                    # Send Telegram notifications if configured
-                    if Config.telegram_bot_token and Config.telegram_chat_id:
-                        send_telegram_message(item_title, item_price, item_url, item_image)
+                        # Send Telegram notifications if configured
+                        if Config.telegram_bot_token and Config.telegram_chat_id:
+                            send_telegram_message(item_title, item_price, item_url, item_image)
 
                     # Mark item as analyzed and save it
                     list_analyzed_items.append(item_id)
                     save_analyzed_item(item_id)
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()  # Parse CLI arguments
+    main(args)  # Call main with parsed args
