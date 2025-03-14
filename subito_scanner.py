@@ -185,7 +185,8 @@ def main(args):
                     if feature["uri"] == "/price":
                         item_price = feature["values"][0]["value"]
 
-                item_image = f"{item['images'][0]['cdn_base_url']}?rule=images-auto"
+                if item['images']:
+                    item_image = f"{item['images'][0]['cdn_base_url']}?rule=images-auto"
 
                 # Check if the item has already been analyzed to prevent duplicates
                 if item_id not in list_analyzed_items:
