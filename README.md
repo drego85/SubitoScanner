@@ -61,7 +61,24 @@ To customize the script for your needs, you must configure the `Config.py` file.
      ```
 
 3. **Telegram Bot (for Telegram notifications)**:
-   - Set the Telegram bot token and chat ID:
+   
+   **Step 1: Create a Telegram Bot**
+   - Open Telegram and search for `@BotFather`
+   - Send `/newbot` command
+   - Follow the instructions: choose a name and username for your bot
+   - BotFather will give you a **bot token** (e.g., `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+   - Save this token, you'll need it for the configuration
+   
+   **Step 2: Get your Chat ID**
+   - Search for your bot in Telegram and click **START** (or send `/start`)
+   - Run this command in your terminal (replace `YOUR_BOT_TOKEN` with the token from BotFather):
+     ```bash
+     curl https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates
+     ```
+   - Look for the `"chat":{"id":123456789}` in the response - that number is your **chat ID**
+   
+   **Step 3: Configure Config.py**
+   - Set the bot token and chat ID in your configuration file:
      ```python
      telegram_bot_token = "your_bot_token"
      telegram_chat_id = "your_chat_id"
