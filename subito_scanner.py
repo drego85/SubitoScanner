@@ -74,7 +74,10 @@ def send_email(item_title, item_price, item_url, item_image):
         msg["Message-ID"] = email.utils.make_msgid()
 
         # Format message content
-        body = f"{item_title}\n{item_price}\n🔗 {item_url}\n📷 {item_image}"
+        body_lines = [item_title, str(item_price), f"🔗 {item_url}"]
+        if item_image:
+            body_lines.append(f"📷 {item_image}")
+        body = "\n".join(body_lines)
 
         msg.set_content(body)
         
@@ -102,7 +105,10 @@ def send_slack_message(item_title, item_price, item_url, item_image):
     webhook_url = Config.slack_webhook_url 
 
     # Format message content
-    message = f"*{item_title}*\n🏷️ {item_price}\n🔗 {item_url}\n📷 {item_image}"
+    message_lines = [f"*{item_title}*", f"🏷️ {item_price}", f"🔗 {item_url}"]
+    if item_image:
+        message_lines.append(f"📷 {item_image}")
+    message = "\n".join(message_lines)
     slack_data = {"text": message}
 
     try:
@@ -125,7 +131,10 @@ def send_slack_message(item_title, item_price, item_url, item_image):
 def send_telegram_message(item_title, item_price, item_url, item_image):
 
     # Format message content
-    message = f"<b>{item_title}*</b>\n🏷️ {item_price}\n🔗 {item_url}\n📷 {item_image}"
+    message_lines = [f"<b>{item_title}</b>", f"🏷️ {item_price}", f"🔗 {item_url}"]
+    if item_image:
+        message_lines.append(f"📷 {item_image}")
+    message = "\n".join(message_lines)
 
     try:
         url = f"https://api.telegram.org/bot{Config.telegram_bot_token}/sendMessage"
@@ -180,12 +189,13 @@ def main(args):
                 item_id = str(item["urn"]).split(":")[-1]
                 item_title = item["subject"]
                 item_url = item["urls"]["default"]
+                item_image = None
 
                 for feature in item["features"]:
                     if feature["uri"] == "/price":
                         item_price = feature["values"][0]["value"]
 
-                if item['images']:
+                if item.get("images"):
                     item_image = f"{item['images'][0]['cdn_base_url']}?rule=images-auto"
 
                 # Check if the item has already been analyzed to prevent duplicates
