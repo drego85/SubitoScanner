@@ -39,7 +39,10 @@ class SubitoScanner:
                 title = item["subject"]
                 url = item["urls"]["default"]
                 price = self._extract_price(item["features"])
-                image = f"{item['images'][0]['cdn_base_url']}?rule=images-auto" if item["images"] else ""
+                image = ""
+                images = item.get("images") or []
+                if images:
+                    image = f"{images[0]['cdn_base_url']}?rule=images-auto"
 
                 if dry_run:
                     print(f"[DRY-RUN] found: {title} - {url}")

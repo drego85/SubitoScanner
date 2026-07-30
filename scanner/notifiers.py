@@ -24,7 +24,10 @@ class EmailNotifier:
             msg["Subject"] = "Subito Scanner - New Item"
             msg["Date"] = email.utils.formatdate(localtime=True)
             msg["Message-ID"] = email.utils.make_msgid()
-            msg.set_content(f"{title}\n{price}\n🔗 {url}\n📷 {image}")
+            body_lines = [title, str(price), f"🔗 {url}"]
+            if image:
+                body_lines.append(f"📷 {image}")
+            msg.set_content("\n".join(body_lines))
             with smtplib.SMTP(self.server, 587) as smtp:
                 smtp.ehlo()
                 smtp.starttls()
@@ -43,7 +46,10 @@ class SlackNotifier:
         self.webhook_url = webhook_url
 
     def send(self, title: str, price: str, url: str, image: str):
-        message = f"*{title}*\n🏷️ {price}\n🔗 {url}\n📷 {image}"
+        message_lines = [f"*{title}*", f"🏷️ {price}", f"🔗 {url}"]
+        if image:
+            message_lines.append(f"📷 {image}")
+        message = "\n".join(message_lines)
         try:
             response = requests.post(
                 self.webhook_url,
