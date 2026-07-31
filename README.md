@@ -280,12 +280,14 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 | `/list` | Numbered searches with status, exact badge, items seen |
 | `/status` | Running/paused + counts |
 | `/scan` | Run a Subito check **now** (don't wait for the next cron) |
+| `/add` | **Guided setup** (same as ➕ Add): term → region → price → exact |
 | `/add <term>` | Track a broad search (all Italy), e.g. `/add macbook pro` |
 | `/add <term> in <region>` | Limit where to look, e.g. `/add wd red in toscana` |
 | `/add <term> min <n> max <n>` | Price filter in €, e.g. `/add sh 125 min 500 max 2000` |
 | `/add <term> <min>-<max>` | Price shorthand, e.g. `/add sh 125 500-2000 in toscana` |
 | `/exact <term> [in <region>]` | Title-only / exact keywords, e.g. `/exact wd red in toscana` |
 | `/edit <n> [filters…]` | Change an existing search — keep the term, add/change filters |
+| `/cancel` | Abort the guided add wizard |
 | `/regions` | List Italian regions you can use with `in …` |
 | `/stop <n>` | Pause search #n (clears its history — resume notifies fresh) |
 | `/stopall` | Pause **all** searches (`/stop all` also works) |
@@ -298,8 +300,9 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 
 **Tips**
 - Just type a term with no slash (e.g. `iphone 15`) — the bot replies with ready-to-send `/add` / region / `/exact` commands.
-- Bottom **reply keyboard**: List · Scan · Status · Stop/Resume all · Wipe all · Help (shown after `/start`). Wipe all still asks for `/wipe confirm`.
-- Under `/list`, tap **⏹ / ▶️ / ✏️ / 🗑** on each search (plus Stop all / Resume all / Scan now). Tap ✏️ for ready-to-copy `/edit` examples.
+- Bottom **reply keyboard**: **Add** · List · Scan · Status · Stop/Resume all · Wipe all · Help (shown after `/start`). Wipe all still asks for `/wipe confirm`.
+- Tap **➕ Add** (or `/add` alone) for a guided wizard: search term → region → price → broad/exact → confirm.
+- Under `/list`, tap **⏹ / ▶️ / ✏️ / 🗑** on each search (plus Add / Stop all / Resume all / Scan now). Tap ✏️ for ready-to-copy `/edit` examples.
 - `/edit 1 in toscana` then later `/edit 1 min 500 max 2000` — filters stack onto the existing search.
 - `/edit 1 anywhere` / `/edit 1 clear price` / `/edit 1 exact` — remove a filter or toggle title-only.
 - `/add exact <term>` still works as an alias of `/exact`.
