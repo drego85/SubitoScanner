@@ -25,12 +25,23 @@ SubitoScanner/
 ├── .env.example          ← template for secrets (copy → .env)
 ├── .env                  ← your secrets (gitignored — never commit)
 ├── subito-bot.service    ← systemd unit template (optional, always-on bot)
+├── tests/                ← offline unit / smoke tests
 └── scanner/
-    ├── utils.py          ← shared constants and helpers
+    ├── constants.py      ← HTTP timeout / browser headers
+    ├── regions.py        ← Italian region ids + aliases
+    ├── query.py          ← build / parse / patch Subito query strings
+    ├── utils.py          ← compat re-exports of the above
     ├── state.py          ← persistent state (items seen, paused flag, etc.)
     ├── notifiers.py      ← EmailNotifier, SlackNotifier, TelegramNotifier
-    ├── bot.py            ← Telegram bot command handling
-    └── core.py           ← main scan loop
+    ├── core.py           ← main scan loop
+    └── bot/              ← Telegram bot (package)
+        ├── app.py        ← TelegramBot facade (poll / dispatch)
+        ├── keyboards.py  ← reply / inline keyboards
+        ├── formatting.py ← list/status markup helpers
+        ├── help.py       ← interactive help
+        ├── wizard.py     ← guided add flow
+        ├── callbacks.py  ← inline button handlers
+        └── commands.py   ← slash / button commands
 ```
 
 ## Getting Started
@@ -299,7 +310,7 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 | `/unpause` | Unmute alerts |
 
 **Tips**
-- Bottom keyboard: **➕ New** · **Searches** · **Scan** · **Status** · **Help** (send `/start` to refresh).
+- Bottom keyboard: **➕ New** · **📋 Searches** · **🔎 Scan** · **📡 Status** · **📖 Help** (send `/start` to refresh).
 - Tap **➕ New** for guided setup with progress, Back, price presets, and a live draft.
 - Type a plain term (e.g. `iphone 15`) → **Continue setup** or **Add · All Italy**.
 - **Searches**: Pause / Edit / Delete per item (delete asks to confirm). Bulk actions at the bottom.

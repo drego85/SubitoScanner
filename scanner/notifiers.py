@@ -6,7 +6,7 @@ import email.utils
 import requests
 from email.message import EmailMessage
 
-from .utils import TIMEOUT
+from .constants import TIMEOUT
 
 
 class EmailNotifier:
@@ -75,10 +75,10 @@ class TelegramNotifier:
         safe_title = html.escape(title)
         safe_price = html.escape(str(price))
         caption = (
-            f"<b>New on Subito</b>\n\n"
+            f"🆕 <b>New on Subito</b>\n\n"
             f"<b>{safe_title}</b>\n"
-            f"{safe_price}\n"
-            f"{url}"
+            f"💰 {safe_price}\n"
+            f"🔗 {url}"
         )
         if image:
             self._post_photo(self.chat_id, image, caption)

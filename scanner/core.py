@@ -3,7 +3,8 @@ import requests
 
 import Config
 from .state import State
-from .utils import BROWSER_HEADERS, TIMEOUT, query_title
+from .constants import BROWSER_HEADERS, TIMEOUT
+from .query import query_title
 
 
 class SubitoScanner:
