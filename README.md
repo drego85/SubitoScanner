@@ -141,17 +141,24 @@ queries = [
 | `shp`     | Shipping available: `true` / `false` |
 | `qso`     | Title-only / exact keywords (`true` = Subito "cerca solo nel titolo") |
 | `r`       | Region id (optional). `9` = Toscana. Omit for all Italy. See table below or `/regions` in Telegram |
+| `ps`      | Minimum price in euros (optional) |
+| `pe`      | Maximum price in euros (optional) |
 | `sort`    | Sort order — use `datedesc` for newest first |
 | `lim`     | Results per page (e.g. `10`) |
 | `start`   | Pagination offset (use `0` for the first page) |
 
-**Where (region) via Telegram**
+**Where / price via Telegram**
 
 ```
 /add wd red in toscana
-/exact wd red in toscana
-/add macbook pro          ← all Italy (no region)
-/regions                  ← full list of names you can use
+/add sh 125 min 500 max 2000
+/add sh 125 500-2000 in toscana
+/exact wd red in toscana min 50
+/add macbook pro          ← all Italy (no region / any price)
+/edit 1 in toscana        ← add region to existing search #1
+/edit 1 min 500 max 2000  ← then add price (keeps region)
+/edit 1 anywhere          ← remove region filter
+/regions                  ← full list of region names
 ```
 
 | `r=` | Region |
@@ -275,19 +282,30 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 | `/scan` | Run a Subito check **now** (don't wait for the next cron) |
 | `/add <term>` | Track a broad search (all Italy), e.g. `/add macbook pro` |
 | `/add <term> in <region>` | Limit where to look, e.g. `/add wd red in toscana` |
+| `/add <term> min <n> max <n>` | Price filter in €, e.g. `/add sh 125 min 500 max 2000` |
+| `/add <term> <min>-<max>` | Price shorthand, e.g. `/add sh 125 500-2000 in toscana` |
 | `/exact <term> [in <region>]` | Title-only / exact keywords, e.g. `/exact wd red in toscana` |
+| `/edit <n> [filters…]` | Change an existing search — keep the term, add/change filters |
 | `/regions` | List Italian regions you can use with `in …` |
 | `/stop <n>` | Pause search #n (clears its history — resume notifies fresh) |
+| `/stopall` | Pause **all** searches (`/stop all` also works) |
 | `/resume <n>` | Re-enable a stopped search |
+| `/resumeall` | Resume **all** stopped searches (`/resume all` / `/startall` also work) |
 | `/remove <n>` | Delete search #n permanently |
+| `/wipe confirm` | Delete **all** searches and their history (confirmation required) |
 | `/pause` | Mute all alerts (scanning still runs) |
 | `/unpause` | Unmute alerts |
 
 **Tips**
 - Just type a term with no slash (e.g. `iphone 15`) — the bot replies with ready-to-send `/add` / region / `/exact` commands.
+- Bottom **reply keyboard**: List · Scan · Status · Stop/Resume all · Wipe all · Help (shown after `/start`). Wipe all still asks for `/wipe confirm`.
+- Under `/list`, tap **⏹ / ▶️ / ✏️ / 🗑** on each search (plus Stop all / Resume all / Scan now). Tap ✏️ for ready-to-copy `/edit` examples.
+- `/edit 1 in toscana` then later `/edit 1 min 500 max 2000` — filters stack onto the existing search.
+- `/edit 1 anywhere` / `/edit 1 clear price` / `/edit 1 exact` — remove a filter or toggle title-only.
 - `/add exact <term>` still works as an alias of `/exact`.
 - Use `/exact` when broad search is too noisy (Subito *cerca solo nel titolo* / `qso=true`).
 - Use `in toscana` (or any name from `/regions`) to search in one region only (`r=` in the API).
+- Use `min 100 max 500` or `100-500` for price filters (`ps=` / `pe=` in the API).
 - `/scan` triggers an immediate Subito check; cron still runs on schedule in the background.
 
 > **Security:** only messages from the configured `TELEGRAM_CHAT_ID` are processed. Anyone else who messages the bot gets no response.
@@ -309,9 +327,9 @@ All runtime state is stored in `scanner_state.json`:
 }
 ```
 
-- `queries` is the live list — edited via `/add` and `/remove`, never via `Config.py` after the first run.
+- `queries` is the live list — edited via `/add`, `/edit` and `/remove`, never via `Config.py` after the first run.
 - `items_by_query` uses the query string as key, so adding or removing queries never corrupts the history of other queries.
-- `/stop` clears a query's item history so re-enabling it notifies you of all current listings fresh.
+- `/stop` and `/edit` clear a query's item history so the next scan notifies you of current listings fresh.
 
 **Upgrading from a previous version:** if a `subito_items.txt` file is present it is automatically migrated into `scanner_state.json` on the first run and renamed to `subito_items.txt.bak`.
 

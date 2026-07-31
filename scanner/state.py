@@ -117,14 +117,50 @@ class State:
         if query in self.disabled_queries:
             self.disabled_queries.remove(query)
 
+    def update_query(self, old: str, new: str):
+        """replace a query string in-place; clears history (filters changed)."""
+        if old not in self.queries:
+            return
+        if old == new:
+            return
+        idx = self.queries.index(old)
+        self.queries[idx] = new
+        self.items_by_query.pop(old, None)
+        self.items_by_query.pop(new, None)
+        self.disabled_queries = [new if q == old else q for q in self.disabled_queries]
+
     def disable_query(self, query: str):
-        self.disabled_queries.append(query)
+        if query not in self.disabled_queries:
+            self.disabled_queries.append(query)
         # clear history so re-enabling the query will notify fresh results
         self.items_by_query.pop(query, None)
 
     def enable_query(self, query: str):
-        if query in self.disabled_queries:
+        while query in self.disabled_queries:
             self.disabled_queries.remove(query)
+
+    def stop_all(self) -> int:
+        """stop every active query. returns how many were newly stopped."""
+        count = 0
+        for q in list(self.queries):
+            if not self.is_query_disabled(q):
+                self.disable_query(q)
+                count += 1
+        return count
+
+    def resume_all(self) -> int:
+        """re-enable every stopped query. returns how many were resumed."""
+        stopped = [q for q in self.queries if self.is_query_disabled(q)]
+        self.disabled_queries = []
+        return len(stopped)
+
+    def wipe_all(self) -> int:
+        """delete every search and its history. returns how many were removed."""
+        count = len(self.queries)
+        self.queries = []
+        self.disabled_queries = []
+        self.items_by_query = {}
+        return count
 
     # ── item tracking ─────────────────────────────────────────────────────────
 

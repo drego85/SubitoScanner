@@ -85,8 +85,46 @@ class TelegramNotifier:
         else:
             self._post_message(self.chat_id, caption, disable_preview=True)
 
-    def reply(self, chat_id, text: str):
-        self._post_message(chat_id, text)
+    def reply(self, chat_id, text: str, reply_markup=None, disable_preview: bool = False):
+        self._post_message(chat_id, text, reply_markup=reply_markup, disable_preview=disable_preview)
+
+    def edit_message(self, chat_id, message_id: int, text: str, reply_markup=None):
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": text,
+            "parse_mode": "HTML",
+        }
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
+        try:
+            response = requests.post(
+                f"{self._base_url}/editMessageText",
+                json=payload,
+                timeout=TIMEOUT,
+            )
+            if response.status_code != 200 or not response.json().get("ok"):
+                # message unchanged is fine; otherwise fall back to a new reply
+                desc = (response.json() or {}).get("description", "")
+                if "message is not modified" not in desc.lower():
+                    logging.error(f"telegram edit failed: {response.text}")
+                    self.reply(chat_id, text, reply_markup=reply_markup)
+        except requests.exceptions.RequestException as e:
+            logging.error(f"error editing telegram message: {e}")
+
+    def answer_callback(self, callback_query_id: str, text: str = None, show_alert: bool = False):
+        payload = {"callback_query_id": callback_query_id}
+        if text:
+            payload["text"] = text
+            payload["show_alert"] = show_alert
+        try:
+            requests.post(
+                f"{self._base_url}/answerCallbackQuery",
+                json=payload,
+                timeout=TIMEOUT,
+            )
+        except requests.exceptions.RequestException as e:
+            logging.error(f"error answering callback: {e}")
 
     def get_updates(self, offset: int, timeout: int = 1) -> list:
         try:
@@ -151,14 +189,16 @@ class TelegramNotifier:
         except requests.exceptions.RequestException as e:
             logging.error(f"error sending telegram photo: {e}")
 
-    def _post_message(self, chat_id, text: str, disable_preview: bool = False):
-        params = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+    def _post_message(self, chat_id, text: str, reply_markup=None, disable_preview: bool = False):
+        payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
         if disable_preview:
-            params["link_preview_options"] = json.dumps({"is_disabled": True})
+            payload["link_preview_options"] = {"is_disabled": True}
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
         try:
             response = requests.post(
                 f"{self._base_url}/sendMessage",
-                params=params,
+                json=payload,
                 timeout=TIMEOUT,
             )
             if response.status_code != 200:
