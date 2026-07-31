@@ -23,74 +23,92 @@ from .utils import (
 
 # short descriptions show in telegram's "/" menu
 _COMMANDS = [
-    {"command": "start",     "description": "Welcome & quick start"},
-    {"command": "help",      "description": "All commands with examples"},
-    {"command": "list",      "description": "Your tracked searches"},
-    {"command": "status",    "description": "Scanner status at a glance"},
-    {"command": "scan",      "description": "Scan Subito now (don't wait for cron)"},
-    {"command": "add",       "description": "Track a search — /add alone for guided setup"},
-    {"command": "exact",     "description": "Title-only — /exact wd red in toscana"},
-    {"command": "edit",      "description": "Change a search — /edit 1 in toscana min 500"},
-    {"command": "cancel",    "description": "Cancel the guided add wizard"},
-    {"command": "regions",   "description": "List Italian regions you can use"},
-    {"command": "stop",      "description": "Pause one search — /stop 1"},
-    {"command": "stopall",   "description": "Pause ALL searches"},
-    {"command": "resume",    "description": "Resume one search — /resume 1"},
-    {"command": "resumeall", "description": "Resume ALL stopped searches"},
-    {"command": "remove",    "description": "Delete a search — /remove 1"},
-    {"command": "wipe",      "description": "Delete ALL searches (needs /wipe confirm)"},
-    {"command": "pause",     "description": "Mute all notifications"},
-    {"command": "unpause",   "description": "Unmute all notifications"},
+    {"command": "start",     "description": "Home — overview & shortcuts"},
+    {"command": "help",      "description": "Guide & examples"},
+    {"command": "list",      "description": "Your searches"},
+    {"command": "status",    "description": "Scanner status"},
+    {"command": "scan",      "description": "Scan Subito now"},
+    {"command": "add",       "description": "New search (guided or one-liner)"},
+    {"command": "exact",     "description": "Title-only search"},
+    {"command": "edit",      "description": "Edit a search — /edit 1 in toscana"},
+    {"command": "cancel",    "description": "Cancel guided setup"},
+    {"command": "regions",   "description": "Italian regions"},
+    {"command": "stop",      "description": "Pause one search"},
+    {"command": "stopall",   "description": "Pause all searches"},
+    {"command": "resume",    "description": "Resume one search"},
+    {"command": "resumeall", "description": "Resume all searches"},
+    {"command": "remove",    "description": "Delete one search"},
+    {"command": "wipe",      "description": "Delete all searches"},
+    {"command": "pause",     "description": "Mute alerts"},
+    {"command": "unpause",   "description": "Unmute alerts"},
 ]
 
-_BOT_SHORT = "Alerts you when new Subito.it listings match your searches."
+_BOT_SHORT = "Get Telegram alerts when new Subito.it listings match your searches."
 _BOT_DESCRIPTION = (
-    "Monitor Subito.it and get Telegram alerts for new listings.\n\n"
-    "Quick start:\n"
-    "1. Tap ➕ Add (guided) or /add macbook pro\n"
-    "2. /add wd red in toscana — only Tuscany\n"
-    "3. /exact wd red in toscana — title-only + region\n"
-    "4. /edit 1 in toscana min 500 — tweak an existing search\n"
-    "5. /scan — check Subito right now\n"
-    "6. /stopall · /resumeall · /wipe confirm — bulk controls\n\n"
-    "Tip: use the bottom buttons, or tap actions under /list."
+    "Subito Scanner watches Subito.it and pings you on new matches.\n\n"
+    "Start with ➕ New (guided), or /add sh 125 in toscana min 500.\n"
+    "Manage everything from Searches. Tap /help anytime."
 )
 
-# persistent bottom keyboard (reply keyboard)
-_BTN_ADD = "➕ Add"
-_BTN_LIST = "📋 List"
-_BTN_SCAN = "🔎 Scan"
-_BTN_STATUS = "📡 Status"
-_BTN_RESUME_ALL = "▶️ Resume all"
-_BTN_STOP_ALL = "⏹ Stop all"
-_BTN_WIPE_ALL = "🗑 Wipe all"
-_BTN_HELP = "📖 Help"
+# primary bottom keyboard — keep rare/destructive actions in context menus
+_BTN_ADD = "➕ New"
+_BTN_LIST = "Searches"
+_BTN_SCAN = "Scan"
+_BTN_STATUS = "Status"
+_BTN_HELP = "Help"
 
 _MAIN_KEYBOARD = {
     "keyboard": [
         [{"text": _BTN_ADD}, {"text": _BTN_LIST}, {"text": _BTN_SCAN}],
-        [{"text": _BTN_STATUS}, {"text": _BTN_RESUME_ALL}, {"text": _BTN_STOP_ALL}],
-        [{"text": _BTN_WIPE_ALL}, {"text": _BTN_HELP}],
+        [{"text": _BTN_STATUS}, {"text": _BTN_HELP}],
     ],
     "resize_keyboard": True,
     "is_persistent": True,
 }
 
-# map reply-keyboard labels → command name (no leading slash)
+# map reply-keyboard labels → command (include legacy labels after keyboard refresh)
 _BUTTON_COMMANDS = {
     _BTN_ADD: "new",
+    "➕ Add": "new",
     _BTN_LIST: "list",
+    "📋 List": "list",
     _BTN_SCAN: "scan",
+    "🔎 Scan": "scan",
     _BTN_STATUS: "status",
-    _BTN_RESUME_ALL: "resumeall",
-    _BTN_STOP_ALL: "stopall",
-    _BTN_WIPE_ALL: "wipe",
+    "📡 Status": "status",
     _BTN_HELP: "help",
+    "📖 Help": "help",
+    # legacy bulk buttons still work if the old keyboard is cached
+    "▶️ Resume all": "resumeall",
+    "⏹ Stop all": "stopall",
+    "🗑 Wipe all": "wipe",
 }
 
 _WIZ_CANCEL_KB = {
-    "inline_keyboard": [[{"text": "❌ Cancel", "callback_data": "wiz:cancel"}]],
+    "inline_keyboard": [[{"text": "Cancel", "callback_data": "wiz:cancel"}]],
 }
+
+# price presets shown in the guided wizard (min, max) — none means unbound
+_PRICE_PRESETS = [
+    ("Under 100€", 0, 100),
+    ("100–500€", 100, 500),
+    ("500–1.5k€", 500, 1500),
+    ("1.5–3k€", 1500, 3000),
+]
+
+
+def _step_bar(current: int, total: int = 4) -> str:
+    """compact progress indicator, e.g. ●●○○  2/4."""
+    dots = "".join("●" if i <= current else "○" for i in range(1, total + 1))
+    return f"{dots}  <b>{current}/{total}</b>"
+
+
+def _inline(*rows) -> dict:
+    return {"inline_keyboard": [list(r) for r in rows if r]}
+
+
+def _btn(text: str, data: str) -> dict:
+    return {"text": text, "callback_data": data}
 
 
 class TelegramBot:
@@ -101,6 +119,7 @@ class TelegramBot:
         self.notifiers = notifiers if notifiers is not None else ([notifier] if notifier else [])
         self._scanning = False
         self._wizard = None  # guided /add conversation state
+        self._pending_term = None  # plain-text term waiting for "continue setup"
 
     def poll(self):
         """fetch pending updates once, dispatch commands, and persist state."""
@@ -209,10 +228,57 @@ class TelegramBot:
             handler()
         else:
             self.notifier.reply(chat_id, (
-                "❓ i don't know that command.\n\n"
-                "try /help for the full list, or just type what you want to search "
-                "(e.g. <code>macbook pro</code>) and i'll show you how to track it."
+                "I don't know that command.\n\n"
+                "Try /help, tap <b>➕ New</b>, or type a search term "
+                "(e.g. <code>macbook pro</code>)."
             ), reply_markup=_MAIN_KEYBOARD)
+
+    def _after_action_kb(self) -> dict:
+        """inline shortcuts shown after successful mutations."""
+        return _inline(
+            [_btn("Searches", "list"), _btn("Scan now", "scan"), _btn("➕ New", "new")],
+        )
+
+    def _status_actions_kb(self) -> dict:
+        mute = _btn("Unmute alerts", "unpause") if self.state.paused else _btn("Mute alerts", "pause")
+        return _inline(
+            [_btn("Scan now", "scan"), _btn("Searches", "list"), _btn("➕ New", "new")],
+            [mute, _btn("Pause all", "stopall"), _btn("Resume all", "resumeall")],
+            [_btn("Delete all…", "wipe")],
+        )
+
+    def _empty_searches_text(self) -> str:
+        return (
+            "<b>No searches yet</b>\n\n"
+            "Create one in under a minute — I'll ask for the term, "
+            "region, price, and match mode."
+        )
+
+    def _empty_searches_kb(self) -> dict:
+        return _inline([_btn("➕ New search", "new")])
+
+    def _format_query_meta(self, q: str) -> str:
+        bits = []
+        region = query_region_name(q) or "All Italy"
+        bits.append(region)
+        price = format_price_range(*query_price_range(q))
+        if price:
+            bits.append(price)
+        if is_exact_query(q):
+            bits.append("exact")
+        return " · ".join(bits)
+
+    def _refresh_list_message(self, chat_id, message_id):
+        text, markup = self._build_list_message()
+        if text is None:
+            self.notifier.edit_message(
+                chat_id,
+                message_id,
+                self._empty_searches_text(),
+                reply_markup=self._empty_searches_kb(),
+            )
+        else:
+            self.notifier.edit_message(chat_id, message_id, text, reply_markup=markup)
 
     def _process_callback(self, callback: dict):
         cb_id = callback.get("id")
@@ -226,208 +292,349 @@ class TelegramBot:
                 self.notifier.answer_callback(cb_id, "unauthorized", show_alert=True)
             return
 
-        # guided add wizard buttons
         if data.startswith("wiz:"):
             self._wizard_handle_callback(chat_id, cb_id, data, message_id)
             return
 
+        if data.startswith("help:"):
+            self._help_handle_callback(chat_id, cb_id, data, message_id)
+            return
+
         if data == "new":
-            self.notifier.answer_callback(cb_id, "add search")
+            self.notifier.answer_callback(cb_id)
+            term = self._pending_term
+            self._pending_term = None
+            self._wizard_start(chat_id, term=term)
+            return
+
+        if data == "new_blank":
+            self.notifier.answer_callback(cb_id)
+            self._pending_term = None
             self._wizard_start(chat_id)
+            return
+
+        if data == "list":
+            self.notifier.answer_callback(cb_id)
+            self._cmd_list(chat_id)
+            return
+
+        if data == "scan":
+            self.notifier.answer_callback(cb_id, "Scanning…")
+            self._cmd_scan(chat_id)
+            return
+
+        if data == "pause":
+            self.notifier.answer_callback(cb_id)
+            self._cmd_pause(chat_id)
+            return
+
+        if data == "unpause":
+            self.notifier.answer_callback(cb_id)
+            self._cmd_unpause(chat_id)
+            return
+
+        if data == "wipe":
+            self.notifier.answer_callback(cb_id)
+            self._cmd_wipe(chat_id, [])
+            return
+
+        if data == "wipe:ok":
+            self.notifier.answer_callback(cb_id, "Deleted")
+            self._cmd_wipe(chat_id, ["confirm"])
+            return
+
+        if data == "wipe:no":
+            self.notifier.answer_callback(cb_id, "Kept")
+            if message_id:
+                self.notifier.edit_message(chat_id, message_id, "Kept your searches.")
+            return
+
+        if data == "dismiss":
+            self._pending_term = None
+            self.notifier.answer_callback(cb_id)
+            if message_id:
+                self.notifier.edit_message(chat_id, message_id, "Okay.")
+            return
+
+        if data == "quick_italy" and self._pending_term:
+            term = self._pending_term
+            self._pending_term = None
+            self.notifier.answer_callback(cb_id, "Added")
+            self._cmd_add(chat_id, term.split(), exact=False)
             return
 
         toast = None
         refresh_list = False
-
-        if data == "scan":
-            self.notifier.answer_callback(cb_id, "scanning…")
-            self._cmd_scan(chat_id)
-            return
+        msg_text = (message.get("text") or "").lstrip()
+        from_list = (
+            "Searches" in msg_text[:80]
+            or msg_text.startswith("Delete search")
+            or msg_text.startswith("<b>Delete search")
+        )
 
         if data == "stopall":
             n = self.state.stop_all()
-            toast = "already all stopped" if n == 0 else f"stopped {n}"
-            refresh_list = True
-        elif data == "resumeall":
-            n = self.state.resume_all()
-            toast = "already all active" if n == 0 else f"resumed {n}"
-            refresh_list = True
-        elif ":" in data:
-            action, _, idx_s = data.partition(":")
-            if not idx_s.isdigit():
-                self.notifier.answer_callback(cb_id, "invalid button", show_alert=True)
-                return
-            idx = int(idx_s)
-            if idx < 0 or idx >= len(self.state.queries):
-                self.notifier.answer_callback(cb_id, "search gone — open /list again", show_alert=True)
+            toast = "Already paused" if n == 0 else f"Paused {n}"
+            if from_list:
                 refresh_list = True
             else:
-                q = self.state.queries[idx]
-                n = idx + 1
-                if action == "stop":
-                    if self.state.is_query_disabled(q):
-                        toast = f"#{n} already stopped"
-                    else:
-                        self.state.disable_query(q)
-                        toast = f"stopped #{n}"
-                    refresh_list = True
-                elif action == "resume":
-                    if not self.state.is_query_disabled(q):
-                        toast = f"#{n} already active"
-                    else:
-                        self.state.enable_query(q)
-                        toast = f"resumed #{n}"
-                    refresh_list = True
-                elif action == "remove":
-                    self.state.remove_query(q)
-                    toast = f"removed #{n}"
-                    refresh_list = True
-                elif action == "edit":
-                    self.notifier.answer_callback(cb_id, f"edit #{n}")
-                    self._cmd_edit(chat_id, [str(n)])
-                    return
+                self.notifier.answer_callback(cb_id, toast)
+                self._cmd_stop_all(chat_id)
+                return
+        elif data == "resumeall":
+            n = self.state.resume_all()
+            toast = "Already active" if n == 0 else f"Resumed {n}"
+            if from_list:
+                refresh_list = True
+            else:
+                self.notifier.answer_callback(cb_id, toast)
+                self._cmd_resume_all(chat_id)
+                return
+        elif ":" in data:
+            action, _, idx_s = data.partition(":")
+            if action == "rmok" and idx_s.isdigit():
+                idx = int(idx_s)
+                if 0 <= idx < len(self.state.queries):
+                    self.state.remove_query(self.state.queries[idx])
+                    toast = "Deleted"
                 else:
-                    self.notifier.answer_callback(cb_id, "unknown action", show_alert=True)
-                    return
+                    toast = "Already gone"
+                refresh_list = True
+            elif action == "rmno":
+                toast = "Kept"
+                refresh_list = True
+            elif not idx_s.isdigit():
+                self.notifier.answer_callback(cb_id, "Invalid button", show_alert=True)
+                return
+            else:
+                idx = int(idx_s)
+                if idx < 0 or idx >= len(self.state.queries):
+                    self.notifier.answer_callback(cb_id, "Gone — open Searches again", show_alert=True)
+                    refresh_list = True
+                else:
+                    q = self.state.queries[idx]
+                    n = idx + 1
+                    if action == "stop":
+                        if self.state.is_query_disabled(q):
+                            toast = f"#{n} already paused"
+                        else:
+                            self.state.disable_query(q)
+                            toast = f"Paused #{n}"
+                        refresh_list = True
+                    elif action == "resume":
+                        if not self.state.is_query_disabled(q):
+                            toast = f"#{n} already active"
+                        else:
+                            self.state.enable_query(q)
+                            toast = f"Resumed #{n}"
+                        refresh_list = True
+                    elif action == "remove":
+                        # ask for confirmation before deleting
+                        self.notifier.answer_callback(cb_id)
+                        title = html.escape(query_title(q))
+                        self.notifier.edit_message(
+                            chat_id,
+                            message_id,
+                            f"<b>Delete search #{n}?</b>\n{title}\n\n"
+                            "This cannot be undone.",
+                            reply_markup=_inline(
+                                [_btn("Delete", f"rmok:{idx}"), _btn("Keep", "rmno")],
+                            ),
+                        )
+                        return
+                    elif action == "edit":
+                        self.notifier.answer_callback(cb_id)
+                        self._cmd_edit(chat_id, [str(n)])
+                        return
+                    else:
+                        self.notifier.answer_callback(cb_id, "Unknown action", show_alert=True)
+                        return
         else:
-            self.notifier.answer_callback(cb_id, "unknown action", show_alert=True)
+            self.notifier.answer_callback(cb_id, "Unknown action", show_alert=True)
             return
 
         self.notifier.answer_callback(cb_id, toast)
         if refresh_list and message_id:
-            text, markup = self._build_list_message()
-            if text is None:
-                self.notifier.edit_message(
-                    chat_id,
-                    message_id,
-                    "📭 you're not tracking anything yet.\n\ntry <b>➕ Add</b> or <code>/add macbook pro</code>",
-                    reply_markup={"inline_keyboard": [[{"text": "➕ Add search", "callback_data": "new"}]]},
-                )
-            else:
-                self.notifier.edit_message(chat_id, message_id, text, reply_markup=markup)
+            self._refresh_list_message(chat_id, message_id)
 
     # ── command handlers ──────────────────────────────────────────────────────
 
     def _cmd_start(self, chat_id):
+        total = len(self.state.queries)
         active = sum(1 for q in self.state.queries if not self.state.is_query_disabled(q))
-        paused_note = "\n⏸ notifications are currently <b>paused</b> — /unpause to resume.\n" if self.state.paused else ""
-        self.notifier.reply(chat_id, (
-            "👋 <b>welcome to subito scanner</b>\n\n"
-            "i watch <b>subito.it</b> for you and send a message when a new listing matches.\n"
-            f"{paused_note}\n"
-            "<b>quick start</b>\n"
-            "• use the <b>➕ Add</b> button for a guided setup\n"
-            "• or /add sh 125 in toscana min 500 max 2000 — all at once\n"
-            "• open /list then tap ⏹ ▶️ ✏️ 🗑 under each search\n\n"
-            f"you have <b>{active}</b> active search"
-            f"{'es' if active != 1 else ''}"
-            f" out of <b>{len(self.state.queries)}</b> total.\n\n"
-            "💡 tip: type a search term without a command and i'll offer the right /add for you.\n"
-            "full guide → /help"
-        ), reply_markup=_MAIN_KEYBOARD)
+        paused = "\nAlerts are <b>muted</b> — unmute from Status." if self.state.paused else ""
+
+        if total == 0:
+            body = (
+                "Watch <b>Subito.it</b> and get a ping when something new matches.\n\n"
+                "Tap <b>➕ New</b> — I'll guide you through term, region, "
+                "price, and match mode."
+            )
+        else:
+            body = (
+                f"<b>{active}</b> active · <b>{total}</b> total{paused}\n\n"
+                "<b>Shortcuts</b>\n"
+                "• <b>➕ New</b> — guided setup\n"
+                "• <b>Searches</b> — pause, edit, delete\n"
+                "• <b>Scan</b> — check Subito right now\n\n"
+                "Tip: type a term like <code>sh 125</code> anytime."
+            )
+
+        self.notifier.reply(
+            chat_id,
+            f"<b>Subito Scanner</b>\n\n{body}",
+            reply_markup=_MAIN_KEYBOARD,
+        )
+
+    def _help_menu_text(self) -> str:
+        return (
+            "<b>Help</b>\n\n"
+            "Pick a topic — or use the buttons below the chat for everyday actions."
+        )
+
+    def _help_menu_kb(self) -> dict:
+        return _inline(
+            [_btn("➕ Add a search", "help:add"), _btn("✏️ Edit", "help:edit")],
+            [_btn("Searches & bulk", "help:bulk"), _btn("Alerts", "help:alerts")],
+            [_btn("Regions", "help:regions"), _btn("Examples", "help:examples")],
+        )
+
+    def _help_topic(self, topic: str):
+        pages = {
+            "add": (
+                "<b>Add a search</b>\n\n"
+                "<b>Guided (easiest)</b>\n"
+                "Tap <b>➕ New</b> or send /add — then answer each step.\n\n"
+                "<b>One-liner</b>\n"
+                "<code>/add sh 125 in toscana min 500 max 2000</code>\n"
+                "<code>/exact wd red in toscana</code> — title-only\n\n"
+                "Filters can be in any order: <code>in …</code> · <code>min</code>/<code>max</code> · <code>500-2000</code>"
+            ),
+            "edit": (
+                "<b>Edit a search</b>\n\n"
+                "Open <b>Searches</b> → tap ✏️, or:\n"
+                "<code>/edit 1 in toscana</code>\n"
+                "<code>/edit 1 min 500 max 2000</code>\n"
+                "<code>/edit 1 exact</code> · <code>/edit 1 broad</code>\n"
+                "<code>/edit 1 anywhere</code> — drop region\n"
+                "<code>/edit 1 clear price</code>\n\n"
+                "Only the parts you write change. History resets after an edit."
+            ),
+            "bulk": (
+                "<b>Searches & bulk</b>\n\n"
+                "• <b>Searches</b> — per-item Pause / Edit / Delete\n"
+                "• Pause all / Resume all — from Searches or Status\n"
+                "• Delete all — Status → Delete all… (asks confirmation)\n"
+                "• /stop 1 · /resume 1 · /remove 1 — by number"
+            ),
+            "alerts": (
+                "<b>Alerts</b>\n\n"
+                "• /pause — mute notifications (scanning continues)\n"
+                "• /unpause — turn alerts back on\n"
+                "• <b>Scan</b> — check Subito immediately\n"
+                "• Cron still runs on your schedule in the background"
+            ),
+            "regions": (
+                "<b>Regions</b>\n\n"
+                "Use <code>in toscana</code> (or any name below) with /add, /exact, /edit.\n"
+                "In guided setup, tap a region button.\n\n"
+                + "\n".join(
+                    f"• <code>{html.escape(REGION_IDS[r].lower().replace(' ', '-').replace(chr(39), ''))}</code>"
+                    f" — {html.escape(REGION_IDS[r])}"
+                    for r in sorted(REGION_IDS, key=int)
+                )
+            ),
+            "examples": (
+                "<b>Examples</b>\n\n"
+                "<code>/add macbook pro</code>\n"
+                "<code>/add sh 125 in toscana</code>\n"
+                "<code>/add sh 125 500-2000</code>\n"
+                "<code>/exact wd red in lombardia min 50</code>\n"
+                "<code>/edit 1 in toscana min 500</code>\n"
+                "<code>/scan</code>"
+            ),
+        }
+        return pages.get(topic, self._help_menu_text())
+
+    def _help_handle_callback(self, chat_id, cb_id, data: str, message_id):
+        topic = data.split(":", 1)[1] if ":" in data else "menu"
+        self.notifier.answer_callback(cb_id)
+        if topic in ("menu", "back"):
+            text, kb = self._help_menu_text(), self._help_menu_kb()
+        else:
+            text = self._help_topic(topic)
+            kb = _inline([_btn("← Help topics", "help:back")])
+        if message_id:
+            self.notifier.edit_message(chat_id, message_id, text, reply_markup=kb)
+        else:
+            self.notifier.reply(chat_id, text, reply_markup=kb)
 
     def _cmd_help(self, chat_id):
-        self.notifier.reply(chat_id, (
-            "📖 <b>commands</b>\n\n"
-            "<b>searches</b>\n"
-            "/add — <b>guided setup</b> (same as ➕ Add button)\n"
-            "/add &lt;term&gt; [filters] — quick add in one message\n"
-            "    <i>ex:</i> <code>/add macbook pro</code>\n"
-            "    <i>ex:</i> <code>/add sh 125 in toscana min 500 max 2000</code>\n"
-            "/exact &lt;term&gt; [filters…] — title-only / exact keywords\n"
-            "    <i>ex:</i> <code>/exact wd red in toscana</code>\n"
-            "/edit &lt;n&gt; [filters…] — change an existing search\n"
-            "    <i>ex:</i> <code>/edit 1 in toscana</code>\n"
-            "    <i>ex:</i> <code>/edit 1 min 500 max 2000</code>\n"
-            "    <i>ex:</i> <code>/edit 1 exact</code> · <code>/edit 1 anywhere</code>\n"
-            "/cancel — abort the guided add wizard\n"
-            "/regions — show all Italian regions you can use\n"
-            "/scan — run a Subito check now (don't wait for cron)\n"
-            "/list — numbered list of your searches (+ action buttons)\n"
-            "/stop &lt;n&gt; — pause search #n (clears its history)\n"
-            "/stopall — pause ALL searches\n"
-            "/resume &lt;n&gt; — turn search #n back on\n"
-            "/resumeall — resume ALL stopped searches\n"
-            "/remove &lt;n&gt; — delete search #n forever\n"
-            "/wipe confirm — delete ALL searches + history\n\n"
-            "<b>notifications</b>\n"
-            "/pause — mute all alerts (scanning continues)\n"
-            "/unpause — unmute alerts\n"
-            "/status — running / paused + counts\n\n"
-            "<b>buttons</b>\n"
-            "• bottom keyboard: Add · List · Scan · Status · Stop/Resume/Wipe · Help\n"
-            "• under /list: ⏹ stop · ▶️ resume · ✏️ edit · 🗑 remove\n\n"
-            "<b>tips</b>\n"
-            "• ➕ Add asks step by step: term → region → price → exact/broad\n"
-            "• /exact = subito <i>cerca solo nel titolo</i>\n"
-            "• /edit keeps the term and only changes what you specify\n"
-            "• combine filters freely: <code>in toscana min 100 max 500</code>\n"
-            "• send a plain term like <code>iphone 15</code> for ready-to-tap commands"
-        ), reply_markup=_MAIN_KEYBOARD)
+        self.notifier.reply(
+            chat_id,
+            self._help_menu_text(),
+            reply_markup=self._help_menu_kb(),
+        )
 
     def _build_list_message(self):
         """return (html_text, inline_markup) or (None, None) if empty."""
         if not self.state.queries:
             return None, None
 
-        lines = ["📋 <b>your searches</b>\n"]
+        active = sum(1 for q in self.state.queries if not self.state.is_query_disabled(q))
+        stopped = len(self.state.queries) - active
+        header = f"<b>Searches</b>  ·  {active} active"
+        if stopped:
+            header += f" · {stopped} paused"
+        if self.state.paused:
+            header += "\nAlerts muted — unmute from Status"
+        lines = [header, ""]
+
         rows = []
         for i, q in enumerate(self.state.queries):
             n = i + 1
-            stopped = self.state.is_query_disabled(q)
-            status = "🔴 stopped" if stopped else "🟢 active"
-            badges = []
-            if is_exact_query(q):
-                badges.append("exact")
-            region = query_region_name(q)
-            if region:
-                badges.append(region)
-            price = format_price_range(*query_price_range(q))
-            if price:
-                badges.append(price)
-            badge_txt = f" · {' · '.join(badges)}" if badges else ""
-            count = len(self.state.items_by_query.get(q, []))
+            paused = self.state.is_query_disabled(q)
+            dot = "○" if paused else "●"
             title = html.escape(query_title(q))
+            meta = html.escape(self._format_query_meta(q))
+            count = len(self.state.items_by_query.get(q, []))
+            state = "paused" if paused else "active"
             lines.append(
-                f"<b>#{n}</b> {status}{badge_txt}\n"
-                f"   {title}\n"
-                f"   📦 {count} item{'s' if count != 1 else ''} seen"
+                f"{dot} <b>#{n}</b>  {title}\n"
+                f"    {meta}\n"
+                f"    <i>{state} · {count} seen</i>"
             )
-            if stopped:
+            lines.append("")
+            if paused:
                 rows.append([
-                    {"text": f"▶️ #{n}", "callback_data": f"resume:{i}"},
-                    {"text": f"✏️ #{n}", "callback_data": f"edit:{i}"},
-                    {"text": f"🗑 #{n}", "callback_data": f"remove:{i}"},
+                    _btn(f"Resume #{n}", f"resume:{i}"),
+                    _btn(f"Edit #{n}", f"edit:{i}"),
+                    _btn(f"Delete #{n}", f"remove:{i}"),
                 ])
             else:
                 rows.append([
-                    {"text": f"⏹ #{n}", "callback_data": f"stop:{i}"},
-                    {"text": f"✏️ #{n}", "callback_data": f"edit:{i}"},
-                    {"text": f"🗑 #{n}", "callback_data": f"remove:{i}"},
+                    _btn(f"Pause #{n}", f"stop:{i}"),
+                    _btn(f"Edit #{n}", f"edit:{i}"),
+                    _btn(f"Delete #{n}", f"remove:{i}"),
                 ])
 
         rows.append([
-            {"text": "➕ Add", "callback_data": "new"},
-            {"text": "⏹ Stop all", "callback_data": "stopall"},
-            {"text": "▶️ Resume all", "callback_data": "resumeall"},
+            _btn("➕ New", "new"),
+            _btn("Pause all", "stopall"),
+            _btn("Resume all", "resumeall"),
         ])
-        rows.append([{"text": "🔎 Scan now", "callback_data": "scan"}])
+        rows.append([_btn("Scan now", "scan")])
 
-        lines.append("\n<i>tap the buttons below to manage searches.</i>")
-        if self.state.paused:
-            lines.append("\n⏸ alerts are muted globally — /unpause")
-
-        return "\n".join(lines), {"inline_keyboard": rows}
+        return "\n".join(lines).rstrip(), {"inline_keyboard": rows}
 
     def _cmd_list(self, chat_id):
         text, markup = self._build_list_message()
         if text is None:
-            self.notifier.reply(chat_id, (
-                "📭 you're not tracking anything yet.\n\n"
-                "tap <b>➕ Add</b> below for a guided setup, or send:\n"
-                "• <code>/add macbook pro</code>\n"
-                "• <code>/add wd red in toscana</code>"
-            ), reply_markup=_MAIN_KEYBOARD)
+            self.notifier.reply(
+                chat_id,
+                self._empty_searches_text(),
+                reply_markup=self._empty_searches_kb(),
+            )
             return
         self.notifier.reply(chat_id, text, reply_markup=markup)
 
@@ -438,50 +645,55 @@ class TelegramBot:
         tracked = self.state.total_tracked()
 
         if self.state.paused:
-            run_line = "⏸ <b>paused</b> — scanning runs, but no alerts are sent\n   → /unpause to unmute"
+            run_line = "Alerts <b>muted</b> — scanning continues, no messages"
         else:
-            run_line = "▶️ <b>running</b> — new matches will notify you\n   → /pause to mute"
+            run_line = "Alerts <b>on</b> — new matches notify you"
 
+        lines = [
+            "<b>Status</b>",
+            "",
+            run_line,
+            "",
+            f"Searches  <b>{active}</b> active"
+            + (f" · <b>{stopped}</b> paused" if stopped else "")
+            + f" · {total} total",
+            f"Seen      <b>{tracked}</b> unique listings",
+        ]
         if total == 0:
-            next_step = "\n\nnext: <code>/add something you want</code>"
+            lines.append("\nNext: create a search with ➕ New")
         elif active == 0:
-            next_step = "\n\nall searches are stopped — /list then /resume &lt;n&gt;"
-        else:
-            next_step = "\n\n/scan to check now · /list to manage searches"
+            lines.append("\nAll paused — Resume all when ready")
 
-        self.notifier.reply(chat_id, (
-            "📡 <b>scanner status</b>\n\n"
-            f"{run_line}\n\n"
-            f"🔍 searches: <b>{active}</b> active"
-            + (f", <b>{stopped}</b> stopped" if stopped else "")
-            + f" (of {total})\n"
-            f"📦 unique items seen: <b>{tracked}</b>"
-            f"{next_step}"
-        ), reply_markup=_MAIN_KEYBOARD)
+        self.notifier.reply(
+            chat_id,
+            "\n".join(lines),
+            reply_markup=self._status_actions_kb(),
+        )
 
     def _cmd_scan(self, chat_id):
         if self._scanning:
-            self.notifier.reply(chat_id, "⏳ a scan is already running — hang tight.")
+            self.notifier.reply(chat_id, "A scan is already running…")
             return
 
         active = [q for q in self.state.queries if not self.state.is_query_disabled(q)]
         if not active:
-            self.notifier.reply(chat_id, (
-                "📭 nothing to scan.\n"
-                "add a search with <code>/add …</code> or /resume a stopped one."
-            ))
+            self.notifier.reply(
+                chat_id,
+                "<b>Nothing to scan</b>\n\nAdd a search or resume a paused one.",
+                reply_markup=_inline(
+                    [_btn("➕ New", "new"), _btn("Searches", "list")],
+                ),
+            )
             return
 
-        paused_note = "\n⏸ alerts are muted — new items will be recorded but not notified." if self.state.paused else ""
+        paused_note = "\nAlerts are muted — finds are saved silently." if self.state.paused else ""
         self.notifier.reply(chat_id, (
-            f"🔎 scanning <b>{len(active)}</b> search"
-            f"{'es' if len(active) != 1 else ''} now…"
-            f"{paused_note}"
+            f"Scanning <b>{len(active)}</b> search"
+            f"{'es' if len(active) != 1 else ''}…{paused_note}"
         ))
 
         self._scanning = True
         try:
-            # reload queries/items from disk, but keep the telegram offset we just saved
             saved_update_id = self.state.last_update_id
             self.state = State.load(seed_queries=self.state.queries)
             self.state.last_update_id = max(self.state.last_update_id, saved_update_id)
@@ -490,7 +702,7 @@ class TelegramBot:
             self.state.save()
         except Exception as e:
             logging.error(f"manual scan failed: {e}")
-            self.notifier.reply(chat_id, f"❌ scan failed: {html.escape(str(e))}")
+            self.notifier.reply(chat_id, f"Scan failed: {html.escape(str(e))}")
             return
         finally:
             self._scanning = False
@@ -498,42 +710,35 @@ class TelegramBot:
         new = result["new"]
         if new == 0:
             self.notifier.reply(chat_id, (
-                f"✅ scan done — no new listings.\n"
-                f"checked {result['queries']} active search"
-                f"{'es' if result['queries'] != 1 else ''}."
-            ))
+                f"<b>Scan complete</b>\n"
+                f"No new listings · checked {result['queries']} active"
+            ), reply_markup=self._after_action_kb())
         else:
             self.notifier.reply(chat_id, (
-                f"✅ scan done — <b>{new}</b> new listing"
-                f"{'s' if new != 1 else ''} "
-                f"(alerts {'muted' if self.state.paused else 'sent above'})."
-            ))
+                f"<b>Scan complete</b>\n"
+                f"<b>{new}</b> new listing{'s' if new != 1 else ''} "
+                f"({'muted' if self.state.paused else 'sent above'})"
+            ), reply_markup=self._after_action_kb())
 
     def _cmd_plain_text(self, chat_id, text: str):
-        """turn free-form messages into ready-to-use add commands."""
+        """turn free-form messages into a guided or one-tap add."""
         term = " ".join(text.split())
         if len(term) > 80:
             self.notifier.reply(chat_id, (
-                "that message looks a bit long for a search.\n"
-                "try a short term, or use /help."
-            ))
+                "That looks long for a search term.\n"
+                "Try something shorter, or tap ➕ New."
+            ), reply_markup=_MAIN_KEYBOARD)
             return
 
+        self._pending_term = term
         safe = html.escape(term)
-        add_cmd = html.escape(f"/add {term}")
-        exact_cmd = html.escape(f"/exact {term}")
-        region_cmd = html.escape(f"/add {term} in toscana")
-        price_cmd = html.escape(f"/add {term} min 100 max 500")
         self.notifier.reply(chat_id, (
-            f"🔎 track <b>{safe}</b>?\n\n"
-            f"easiest: tap <b>➕ Add</b> for a guided setup.\n\n"
-            f"or copy &amp; send one of these:\n"
-            f"• <code>{add_cmd}</code> — all Italy\n"
-            f"• <code>{region_cmd}</code> — only Tuscany\n"
-            f"• <code>{price_cmd}</code> — price range\n"
-            f"• <code>{exact_cmd}</code> — title-only / exact\n\n"
-            "/regions for other places · /list for what you already track."
-        ), reply_markup=_MAIN_KEYBOARD)
+            f"Track <b>{safe}</b>?\n\n"
+            "Continue with guided filters, or add it for all Italy right away."
+        ), reply_markup=_inline(
+            [_btn("Continue setup", "new"), _btn("Add · All Italy", "quick_italy")],
+            [_btn("Not now", "dismiss")],
+        ))
 
     def _cmd_regions(self, chat_id):
         lines = [
@@ -558,13 +763,44 @@ class TelegramBot:
         if was:
             self.notifier.reply(
                 chat_id,
-                "❎ add cancelled. tap <b>➕ Add</b> whenever you're ready.",
+                "Cancelled. Tap <b>➕ New</b> whenever you're ready.",
                 reply_markup=_MAIN_KEYBOARD,
             )
         else:
-            self.notifier.reply(chat_id, "nothing to cancel.", reply_markup=_MAIN_KEYBOARD)
+            self.notifier.reply(chat_id, "Nothing to cancel.", reply_markup=_MAIN_KEYBOARD)
 
-    def _wizard_start(self, chat_id):
+    def _wizard_header(self, step: int, title: str) -> str:
+        return f"<b>New search</b>  ·  {_step_bar(step)}\n<b>{title}</b>"
+
+    def _wizard_draft(self) -> str:
+        w = self._wizard or {}
+        if not w.get("term"):
+            return ""
+        where = REGION_IDS.get(w["region"], "All Italy") if w.get("region") else "All Italy"
+        price = format_price_range(w.get("min_price"), w.get("max_price")) or "any price"
+        mode = "exact" if w.get("exact") else "broad"
+        # show mode only once chosen (confirm / after exact step)
+        bits = [html.escape(where), html.escape(price)]
+        if w.get("step") in ("confirm",) or w.get("exact_set"):
+            bits.append(mode)
+        return (
+            f"\n\n🔍 <b>{html.escape(w['term'])}</b>\n"
+            f"<i>{' · '.join(bits)}</i>"
+        )
+
+    def _wizard_nav(self, *extra_rows, back: bool = True, cancel: bool = True) -> dict:
+        rows = [list(r) for r in extra_rows if r]
+        nav = []
+        if back:
+            nav.append(_btn("← Back", "wiz:back"))
+        if cancel:
+            nav.append(_btn("Cancel", "wiz:cancel"))
+        if nav:
+            rows.append(nav)
+        return {"inline_keyboard": rows}
+
+    def _wizard_start(self, chat_id, term: str = None):
+        self._pending_term = None
         self._wizard = {
             "step": "term",
             "term": None,
@@ -572,24 +808,19 @@ class TelegramBot:
             "min_price": None,
             "max_price": None,
             "exact": False,
+            "exact_set": False,
+            "history": [],
         }
-        self.notifier.reply(chat_id, (
-            "➕ <b>add a search</b> — step 1/4\n\n"
-            "what should i look for?\n"
-            "<i>example:</i> <code>sh 125</code> or <code>macbook pro</code>\n\n"
-            "send /cancel anytime to abort."
-        ), reply_markup=_WIZ_CANCEL_KB)
+        if term and len(term.strip()) >= 2:
+            self._wizard["term"] = term.strip()
+            self._wizard_ask_region(chat_id)
+            return
 
-    def _wizard_summary_bits(self) -> str:
-        w = self._wizard or {}
-        term = html.escape(w.get("term") or "…")
-        where = REGION_IDS.get(w["region"], "all Italy") if w.get("region") else "all Italy"
-        price = format_price_range(w.get("min_price"), w.get("max_price")) or "any"
-        mode = "exact" if w.get("exact") else "broad"
-        return (
-            f"🔍 <b>{term}</b>\n"
-            f"📍 {html.escape(where)} · 💶 {html.escape(price)} · {mode}"
-        )
+        self.notifier.reply(chat_id, (
+            f"{self._wizard_header(1, 'What are you looking for?')}\n\n"
+            "Type a search term.\n"
+            "<i>Examples:</i> <code>sh 125</code> · <code>macbook pro</code> · <code>wd red</code>"
+        ), reply_markup=self._wizard_nav(back=False))
 
     def _wizard_region_keyboard(self) -> dict:
         rows = []
@@ -599,23 +830,21 @@ class TelegramBot:
         }
         for rid in sorted(REGION_IDS, key=int):
             label = short_names.get(rid, REGION_IDS[rid])
-            row.append({"text": label, "callback_data": f"wiz:region:{rid}"})
+            row.append(_btn(label, f"wiz:region:{rid}"))
             if len(row) == 3:
                 rows.append(row)
                 row = []
         if row:
             rows.append(row)
-        rows.append([{"text": "🇮🇹 All Italy (skip)", "callback_data": "wiz:region:skip"}])
-        rows.append([{"text": "❌ Cancel", "callback_data": "wiz:cancel"}])
-        return {"inline_keyboard": rows}
+        rows.append([_btn("All Italy", "wiz:region:skip")])
+        return self._wizard_nav(*rows)
 
     def _wizard_ask_region(self, chat_id, edit_message_id=None):
         self._wizard["step"] = "region"
         text = (
-            "➕ <b>add a search</b> — step 2/4\n\n"
-            f"{self._wizard_summary_bits()}\n\n"
-            "limit to a region?\n"
-            "tap one below, or type a name (e.g. <code>toscana</code>)."
+            f"{self._wizard_header(2, 'Where?')}"
+            f"{self._wizard_draft()}\n\n"
+            "Pick a region, or type a name (e.g. <code>toscana</code>)."
         )
         markup = self._wizard_region_keyboard()
         if edit_message_id:
@@ -626,17 +855,24 @@ class TelegramBot:
     def _wizard_ask_price(self, chat_id, edit_message_id=None):
         self._wizard["step"] = "price"
         text = (
-            "➕ <b>add a search</b> — step 3/4\n\n"
-            f"{self._wizard_summary_bits()}\n\n"
-            "add a price filter?"
+            f"{self._wizard_header(3, 'Price filter?')}"
+            f"{self._wizard_draft()}\n\n"
+            "Pick a range, type e.g. <code>500-2000</code>, or skip."
         )
-        markup = {
-            "inline_keyboard": [
-                [{"text": "⏭ Skip (any price)", "callback_data": "wiz:price:skip"}],
-                [{"text": "💶 Set price…", "callback_data": "wiz:price:set"}],
-                [{"text": "❌ Cancel", "callback_data": "wiz:cancel"}],
-            ]
-        }
+        preset_rows = []
+        row = []
+        for i, (label, _, _) in enumerate(_PRICE_PRESETS):
+            row.append(_btn(label, f"wiz:preset:{i}"))
+            if len(row) == 2:
+                preset_rows.append(row)
+                row = []
+        if row:
+            preset_rows.append(row)
+        preset_rows.append([
+            _btn("Custom…", "wiz:price:set"),
+            _btn("Any price", "wiz:price:skip"),
+        ])
+        markup = self._wizard_nav(*preset_rows)
         if edit_message_id:
             self.notifier.edit_message(chat_id, edit_message_id, text, reply_markup=markup)
         else:
@@ -645,19 +881,14 @@ class TelegramBot:
     def _wizard_ask_price_input(self, chat_id, edit_message_id=None):
         self._wizard["step"] = "price_input"
         text = (
-            "➕ <b>price filter</b>\n\n"
-            f"{self._wizard_summary_bits()}\n\n"
-            "send prices like:\n"
+            f"{self._wizard_header(3, 'Enter a price')}"
+            f"{self._wizard_draft()}\n\n"
+            "Send one of:\n"
             "• <code>500-2000</code>\n"
             "• <code>min 500 max 2000</code>\n"
             "• <code>min 500</code> or <code>max 2000</code>"
         )
-        markup = {
-            "inline_keyboard": [
-                [{"text": "⏭ Skip", "callback_data": "wiz:price:skip"}],
-                [{"text": "❌ Cancel", "callback_data": "wiz:cancel"}],
-            ]
-        }
+        markup = self._wizard_nav([_btn("Any price", "wiz:price:skip")])
         if edit_message_id:
             self.notifier.edit_message(chat_id, edit_message_id, text, reply_markup=markup)
         else:
@@ -666,19 +897,15 @@ class TelegramBot:
     def _wizard_ask_exact(self, chat_id, edit_message_id=None):
         self._wizard["step"] = "exact"
         text = (
-            "➕ <b>add a search</b> — step 4/4\n\n"
-            f"{self._wizard_summary_bits()}\n\n"
-            "search mode?"
+            f"{self._wizard_header(4, 'Match mode')}"
+            f"{self._wizard_draft()}\n\n"
+            "<b>Broad</b> — more results\n"
+            "<b>Exact</b> — title-only (Subito “cerca solo nel titolo”)"
         )
-        markup = {
-            "inline_keyboard": [
-                [
-                    {"text": "🔎 Broad (default)", "callback_data": "wiz:exact:0"},
-                    {"text": "🎯 Exact (title-only)", "callback_data": "wiz:exact:1"},
-                ],
-                [{"text": "❌ Cancel", "callback_data": "wiz:cancel"}],
-            ]
-        }
+        markup = self._wizard_nav([
+            _btn("Broad", "wiz:exact:0"),
+            _btn("Exact", "wiz:exact:1"),
+        ])
         if edit_message_id:
             self.notifier.edit_message(chat_id, edit_message_id, text, reply_markup=markup)
         else:
@@ -686,20 +913,16 @@ class TelegramBot:
 
     def _wizard_ask_confirm(self, chat_id, edit_message_id=None):
         self._wizard["step"] = "confirm"
+        self._wizard["exact_set"] = True
         text = (
-            "➕ <b>ready to track?</b>\n\n"
-            f"{self._wizard_summary_bits()}\n\n"
-            "confirm to save this search."
+            f"<b>New search</b>  ·  ready"
+            f"{self._wizard_draft()}\n\n"
+            "Save this search?"
         )
-        markup = {
-            "inline_keyboard": [
-                [
-                    {"text": "✅ Confirm", "callback_data": "wiz:confirm"},
-                    {"text": "🔁 Start over", "callback_data": "wiz:restart"},
-                ],
-                [{"text": "❌ Cancel", "callback_data": "wiz:cancel"}],
-            ]
-        }
+        markup = self._wizard_nav([
+            _btn("Save", "wiz:confirm"),
+            _btn("Start over", "wiz:restart"),
+        ])
         if edit_message_id:
             self.notifier.edit_message(chat_id, edit_message_id, text, reply_markup=markup)
         else:
@@ -709,7 +932,11 @@ class TelegramBot:
         w = self._wizard
         if not w or not w.get("term"):
             self._wizard_clear()
-            self.notifier.reply(chat_id, "❓ wizard expired — tap ➕ Add to start again.", reply_markup=_MAIN_KEYBOARD)
+            self.notifier.reply(
+                chat_id,
+                "Session expired — tap <b>➕ New</b> to start again.",
+                reply_markup=_MAIN_KEYBOARD,
+            )
             return
 
         query = build_query(
@@ -720,30 +947,46 @@ class TelegramBot:
             max_price=w.get("max_price"),
         )
         safe = html.escape(w["term"])
-        mode = "exact / title-only" if w.get("exact") else "broad"
-        where = REGION_IDS.get(w["region"], "all Italy") if w.get("region") else "all Italy"
-        price = format_price_range(w.get("min_price"), w.get("max_price")) or "any"
+        meta = html.escape(self._format_query_meta(query))
         self._wizard_clear()
 
         if query in self.state.queries:
             idx = self.state.queries.index(query) + 1
-            status = "stopped" if self.state.is_query_disabled(query) else "active"
-            tip = f" use /resume {idx} to turn it back on." if status == "stopped" else ""
+            status = "paused" if self.state.is_query_disabled(query) else "active"
+            tip = f" Resume it from Searches." if status == "paused" else ""
             self.notifier.reply(chat_id, (
-                f"ℹ️ <b>{safe}</b> is already #{idx} ({status}).{tip}\n"
-                "/list to see all."
-            ), reply_markup=_MAIN_KEYBOARD)
+                f"Already tracking this as <b>#{idx}</b> ({status}).{tip}"
+            ), reply_markup=self._after_action_kb())
             return
 
         self.state.add_query(query)
         n = len(self.state.queries)
         self.notifier.reply(chat_id, (
-            f"✅ now tracking <b>{safe}</b>\n"
-            f"mode: {mode} · where: <b>{html.escape(where)}</b> · "
-            f"price: <b>{html.escape(price)}</b> · slot <b>#{n}</b>\n"
-            f"you'll get alerts on the next scan when new listings appear.\n\n"
-            "/list · /status · /scan"
-        ), reply_markup=_MAIN_KEYBOARD)
+            f"<b>Saved · #{n}</b>\n"
+            f"🔍 <b>{safe}</b>\n"
+            f"{meta}\n\n"
+            "You'll be notified when new listings appear."
+        ), reply_markup=self._after_action_kb())
+
+    def _wizard_go_back(self, chat_id, message_id):
+        step = self._wizard.get("step")
+        if step in ("region",):
+            # back to term
+            self._wizard["term"] = None
+            self._wizard["step"] = "term"
+            self.notifier.edit_message(chat_id, message_id, (
+                f"{self._wizard_header(1, 'What are you looking for?')}\n\n"
+                "Type a search term."
+            ), reply_markup=self._wizard_nav(back=False))
+        elif step in ("price", "price_input"):
+            self._wizard_ask_region(chat_id, edit_message_id=message_id)
+        elif step == "exact":
+            self._wizard_ask_price(chat_id, edit_message_id=message_id)
+        elif step == "confirm":
+            self._wizard["exact_set"] = False
+            self._wizard_ask_exact(chat_id, edit_message_id=message_id)
+        else:
+            self._wizard_cancel(chat_id)
 
     def _wizard_handle_text(self, chat_id, text: str):
         if not self._wizard:
@@ -754,9 +997,9 @@ class TelegramBot:
             term = text.strip()
             if len(term) < 2:
                 self.notifier.reply(chat_id, (
-                    "please send a longer search term (at least 2 characters).\n"
-                    "<i>example:</i> <code>sh 125</code>"
-                ), reply_markup=_WIZ_CANCEL_KB)
+                    "Please send a longer term (2+ characters).\n"
+                    "<i>Example:</i> <code>sh 125</code>"
+                ), reply_markup=self._wizard_nav(back=False))
                 return
             self._wizard["term"] = term
             self._wizard_ask_region(chat_id)
@@ -766,31 +1009,31 @@ class TelegramBot:
             resolved = resolve_region(text)
             if not resolved:
                 self.notifier.reply(chat_id, (
-                    f"❓ unknown region <b>{html.escape(text)}</b>.\n"
-                    "tap a button below, or try another name (/regions for the list)."
+                    f"Unknown region <b>{html.escape(text)}</b>.\n"
+                    "Tap a button, or try another name."
                 ), reply_markup=self._wizard_region_keyboard())
                 return
             self._wizard["region"] = resolved[0]
             self._wizard_ask_price(chat_id)
             return
 
-        if step == "price_input":
+        if step in ("price_input", "price"):
             _, region_id, min_price, max_price, err = parse_search_args(text.split())
             if err:
                 self.notifier.reply(chat_id, (
-                    f"❓ {html.escape(err)}.\n"
-                    "try <code>500-2000</code> or <code>min 500 max 2000</code>."
-                ), reply_markup=_WIZ_CANCEL_KB)
+                    f"{html.escape(err)}.\n"
+                    "Try <code>500-2000</code> or <code>min 500 max 2000</code>."
+                ), reply_markup=self._wizard_nav([_btn("Any price", "wiz:price:skip")]))
                 return
             if min_price is None and max_price is None and region_id is None:
+                if step == "price":
+                    self.notifier.reply(chat_id, (
+                        "Pick a preset, tap <b>Any price</b>, or send <code>500-2000</code>."
+                    ))
+                    return
                 self.notifier.reply(chat_id, (
-                    "i need a price — e.g. <code>500-2000</code> — or tap Skip."
-                ), reply_markup={
-                    "inline_keyboard": [
-                        [{"text": "⏭ Skip", "callback_data": "wiz:price:skip"}],
-                        [{"text": "❌ Cancel", "callback_data": "wiz:cancel"}],
-                    ]
-                })
+                    "Send a price like <code>500-2000</code>, or tap Any price."
+                ), reply_markup=self._wizard_nav([_btn("Any price", "wiz:price:skip")]))
                 return
             if region_id is not None:
                 self._wizard["region"] = region_id
@@ -799,59 +1042,65 @@ class TelegramBot:
             self._wizard_ask_exact(chat_id)
             return
 
-        if step == "price":
-            # allow typing a price directly instead of tapping "set"
-            _, region_id, min_price, max_price, err = parse_search_args(text.split())
-            if not err and (min_price is not None or max_price is not None):
-                if region_id is not None:
-                    self._wizard["region"] = region_id
-                self._wizard["min_price"] = min_price
-                self._wizard["max_price"] = max_price
-                self._wizard_ask_exact(chat_id)
-                return
-            self.notifier.reply(chat_id, (
-                "tap <b>Skip</b> or <b>Set price</b> below, or send e.g. <code>500-2000</code>."
-            ))
-            return
-
         if step in ("exact", "confirm"):
-            self.notifier.reply(chat_id, (
-                "use the buttons below for this step, or /cancel to abort."
-            ))
+            self.notifier.reply(chat_id, "Use the buttons below, or /cancel.")
             return
 
-        self.notifier.reply(chat_id, "use the buttons, or /cancel.")
+        self.notifier.reply(chat_id, "Use the buttons, or /cancel.")
 
     def _wizard_handle_callback(self, chat_id, cb_id, data: str, message_id):
         parts = data.split(":")
         action = parts[1] if len(parts) > 1 else ""
 
         if action == "cancel":
-            self.notifier.answer_callback(cb_id, "cancelled")
+            self.notifier.answer_callback(cb_id, "Cancelled")
             self._wizard_cancel(chat_id)
             return
 
         if action == "restart":
-            self.notifier.answer_callback(cb_id, "restart")
+            self.notifier.answer_callback(cb_id)
             self._wizard_start(chat_id)
             return
 
+        if action == "back":
+            if not self._wizard:
+                self.notifier.answer_callback(cb_id, "Expired", show_alert=True)
+                return
+            self.notifier.answer_callback(cb_id)
+            self._wizard_go_back(chat_id, message_id)
+            return
+
         if not self._wizard:
-            self.notifier.answer_callback(cb_id, "wizard expired — tap ➕ Add", show_alert=True)
+            self.notifier.answer_callback(cb_id, "Expired — tap ➕ New", show_alert=True)
             return
 
         if action == "region":
             val = parts[2] if len(parts) > 2 else "skip"
             if val == "skip":
                 self._wizard["region"] = None
-                self.notifier.answer_callback(cb_id, "all Italy")
+                self.notifier.answer_callback(cb_id, "All Italy")
             elif val in REGION_IDS:
                 self._wizard["region"] = val
                 self.notifier.answer_callback(cb_id, REGION_IDS[val])
             else:
-                self.notifier.answer_callback(cb_id, "unknown region", show_alert=True)
+                self.notifier.answer_callback(cb_id, "Unknown region", show_alert=True)
                 return
             self._wizard_ask_price(chat_id, edit_message_id=message_id)
+            return
+
+        if action == "preset":
+            idx_s = parts[2] if len(parts) > 2 else ""
+            if not idx_s.isdigit() or int(idx_s) >= len(_PRICE_PRESETS):
+                self.notifier.answer_callback(cb_id, "Unknown", show_alert=True)
+                return
+            _, lo, hi = _PRICE_PRESETS[int(idx_s)]
+            self._wizard["min_price"] = lo if lo else None
+            # under 100 uses min 0 — treat as no min, max 100
+            if lo == 0:
+                self._wizard["min_price"] = None
+            self._wizard["max_price"] = hi
+            self.notifier.answer_callback(cb_id, _PRICE_PRESETS[int(idx_s)][0])
+            self._wizard_ask_exact(chat_id, edit_message_id=message_id)
             return
 
         if action == "price":
@@ -859,28 +1108,28 @@ class TelegramBot:
             if val == "skip":
                 self._wizard["min_price"] = None
                 self._wizard["max_price"] = None
-                self.notifier.answer_callback(cb_id, "any price")
+                self.notifier.answer_callback(cb_id, "Any price")
                 self._wizard_ask_exact(chat_id, edit_message_id=message_id)
             elif val == "set":
-                self.notifier.answer_callback(cb_id, "type a price")
+                self.notifier.answer_callback(cb_id)
                 self._wizard_ask_price_input(chat_id, edit_message_id=message_id)
             else:
-                self.notifier.answer_callback(cb_id, "unknown", show_alert=True)
+                self.notifier.answer_callback(cb_id, "Unknown", show_alert=True)
             return
 
         if action == "exact":
             val = parts[2] if len(parts) > 2 else "0"
             self._wizard["exact"] = val in ("1", "true", "yes")
-            self.notifier.answer_callback(cb_id, "exact" if self._wizard["exact"] else "broad")
+            self.notifier.answer_callback(cb_id, "Exact" if self._wizard["exact"] else "Broad")
             self._wizard_ask_confirm(chat_id, edit_message_id=message_id)
             return
 
         if action == "confirm":
-            self.notifier.answer_callback(cb_id, "saved")
+            self.notifier.answer_callback(cb_id, "Saved")
             self._wizard_commit(chat_id)
             return
 
-        self.notifier.answer_callback(cb_id, "unknown action", show_alert=True)
+        self.notifier.answer_callback(cb_id, "Unknown action", show_alert=True)
 
     def _cmd_add(self, chat_id, args: list, exact: bool):
         # no args → guided wizard (same as ➕ Add)
@@ -942,32 +1191,28 @@ class TelegramBot:
         self.state.add_query(query)
         n = len(self.state.queries)
         self.notifier.reply(chat_id, (
-            f"✅ now tracking <b>{safe}</b>\n"
-            f"mode: {mode} · where: <b>{html.escape(where)}</b> · price: <b>{html.escape(price)}</b> · slot <b>#{n}</b>\n"
-            f"you'll get alerts on the next scan when new listings appear.\n\n"
-            "/list · /status · /scan"
-        ))
+            f"<b>Saved · #{n}</b>\n"
+            f"🔍 <b>{safe}</b>\n"
+            f"{html.escape(self._format_query_meta(query))}\n\n"
+            "You'll be notified when new listings appear."
+        ), reply_markup=self._after_action_kb())
 
     def _edit_usage(self, n: int, query: str) -> str:
         """show current filters + copy-ready /edit examples for one search."""
-        label = html.escape(query_label(query))
-        mode = "exact" if is_exact_query(query) else "broad"
-        where = query_region_name(query) or "all Italy"
-        price = format_price_range(*query_price_range(query)) or "any"
+        title = html.escape(query_title(query))
+        meta = html.escape(self._format_query_meta(query))
         return (
-            f"✏️ <b>edit search #{n}</b> — {label}\n"
-            f"now: {mode} · {html.escape(where)} · {html.escape(price)}\n\n"
-            "send one of these (only changes what you write):\n"
-            f"• <code>/edit {n} in toscana</code> — set region\n"
-            f"• <code>/edit {n} min 500</code> — set min price\n"
-            f"• <code>/edit {n} max 2000</code> — set max price\n"
-            f"• <code>/edit {n} 500-2000</code> — set both prices\n"
-            f"• <code>/edit {n} in toscana min 500 max 2000</code> — several at once\n"
-            f"• <code>/edit {n} exact</code> / <code>/edit {n} broad</code> — title-only on/off\n"
-            f"• <code>/edit {n} anywhere</code> — remove region\n"
-            f"• <code>/edit {n} clear price</code> — remove price filter\n"
-            f"• <code>/edit {n} sh 150</code> — rename the term\n\n"
-            "history is cleared after an edit so the next scan starts fresh."
+            f"<b>Edit #{n}</b>\n"
+            f"🔍 {title}\n"
+            f"<i>{meta}</i>\n\n"
+            "Send a change (only what you write is updated):\n"
+            f"• <code>/edit {n} in toscana</code>\n"
+            f"• <code>/edit {n} min 500</code> · <code>/edit {n} max 2000</code>\n"
+            f"• <code>/edit {n} 500-2000</code>\n"
+            f"• <code>/edit {n} exact</code> · <code>/edit {n} broad</code>\n"
+            f"• <code>/edit {n} anywhere</code> · <code>/edit {n} clear price</code>\n"
+            f"• <code>/edit {n} sh 150</code> — rename\n\n"
+            "<i>History resets after an edit.</i>"
         )
 
     def _cmd_edit(self, chat_id, args: list):
@@ -1025,15 +1270,13 @@ class TelegramBot:
             ))
             return
 
-        old_label = html.escape(query_label(query))
         self.state.update_query(query, new_query)
         new_label = html.escape(query_label(new_query))
         self.notifier.reply(chat_id, (
-            f"✅ updated <b>#{n}</b>\n"
-            f"<s>{old_label}</s>\n"
-            f"→ <b>{new_label}</b>\n\n"
-            "history cleared — next /scan treats current listings as new."
-        ))
+            f"<b>Updated #{n}</b>\n"
+            f"→ {new_label}\n\n"
+            "History cleared — next scan treats current listings as new."
+        ), reply_markup=self._after_action_kb())
 
     def _cmd_remove(self, chat_id, args: list):
         if args and args[0].lower() == "all":
@@ -1053,7 +1296,7 @@ class TelegramBot:
         if not self.state.queries:
             self.notifier.reply(
                 chat_id,
-                "📭 nothing to wipe — you're not tracking any searches.",
+                "<b>Nothing to delete</b>\nYou're not tracking any searches.",
                 reply_markup=_MAIN_KEYBOARD,
             )
             return
@@ -1062,18 +1305,19 @@ class TelegramBot:
         n = len(self.state.queries)
         if not confirmed:
             self.notifier.reply(chat_id, (
-                f"⚠️ this will permanently delete <b>{n}</b> search"
-                f"{'es' if n != 1 else ''} and all their history.\n\n"
-                "to confirm, send:\n"
-                "<code>/wipe confirm</code>"
-            ), reply_markup=_MAIN_KEYBOARD)
+                f"<b>Delete all searches?</b>\n\n"
+                f"This permanently removes <b>{n}</b> search"
+                f"{'es' if n != 1 else ''} and their history."
+            ), reply_markup=_inline(
+                [_btn("Delete everything", "wipe:ok"), _btn("Keep them", "wipe:no")],
+            ))
             return
 
         removed = self.state.wipe_all()
         self.notifier.reply(chat_id, (
-            f"🧹 wiped <b>{removed}</b> search{'es' if removed != 1 else ''}.\n"
-            "start fresh with <code>/add …</code>"
-        ), reply_markup=_MAIN_KEYBOARD)
+            f"Deleted <b>{removed}</b> search{'es' if removed != 1 else ''}.\n"
+            "Tap <b>➕ New</b> to start fresh."
+        ), reply_markup=_inline([_btn("➕ New search", "new")]))
 
     def _cmd_stop(self, chat_id, args: list):
         if args and args[0].lower() == "all":

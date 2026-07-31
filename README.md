@@ -11,7 +11,7 @@ The scanner tracks already-seen items to prevent duplicate notifications, and ca
 - **Automated search** — runs multiple custom Subito queries on every execution
 - **Multi-channel notifications** — e-mail, Slack, and/or Telegram
 - **Duplicate prevention** — item history is persisted per query in `scanner_state.json`
-- **Telegram bot controls** — add, exact-match, stop, resume, remove, pause; plain-text terms get ready-to-send commands
+- **Telegram bot controls** — guided add wizard, edit, pause/resume, wipe; plain-text terms offer one-tap setup
 - **Dry-run mode** — preview results without sending any notifications
 - **Real-time bot responses** — persistent systemd service for instant command replies
 - **Periodic execution** — hourly cron job for new listing scans
@@ -275,12 +275,12 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 
 | Command | What it does |
 |---------|----------------|
-| `/start` | Welcome + quick start |
-| `/help` | Full guide with examples |
-| `/list` | Numbered searches with status, exact badge, items seen |
-| `/status` | Running/paused + counts |
-| `/scan` | Run a Subito check **now** (don't wait for the next cron) |
-| `/add` | **Guided setup** (same as ➕ Add): term → region → price → exact |
+| `/start` | Home overview |
+| `/help` | Interactive guide (topic buttons) |
+| `/list` | Your searches with Pause / Edit / Delete |
+| `/status` | Status + Mute / Pause all / Delete all… |
+| `/scan` | Run a Subito check **now** |
+| `/add` | **Guided setup** (same as ➕ New): term → region → price → mode |
 | `/add <term>` | Track a broad search (all Italy), e.g. `/add macbook pro` |
 | `/add <term> in <region>` | Limit where to look, e.g. `/add wd red in toscana` |
 | `/add <term> min <n> max <n>` | Price filter in €, e.g. `/add sh 125 min 500 max 2000` |
@@ -294,17 +294,18 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 | `/resume <n>` | Re-enable a stopped search |
 | `/resumeall` | Resume **all** stopped searches (`/resume all` / `/startall` also work) |
 | `/remove <n>` | Delete search #n permanently |
-| `/wipe confirm` | Delete **all** searches and their history (confirmation required) |
+| `/wipe` | Delete **all** searches (inline confirmation) |
 | `/pause` | Mute all alerts (scanning still runs) |
 | `/unpause` | Unmute alerts |
 
 **Tips**
-- Just type a term with no slash (e.g. `iphone 15`) — the bot replies with ready-to-send `/add` / region / `/exact` commands.
-- Bottom **reply keyboard**: **Add** · List · Scan · Status · Stop/Resume all · Wipe all · Help (shown after `/start`). Wipe all still asks for `/wipe confirm`.
-- Tap **➕ Add** (or `/add` alone) for a guided wizard: search term → region → price → broad/exact → confirm.
-- Under `/list`, tap **⏹ / ▶️ / ✏️ / 🗑** on each search (plus Add / Stop all / Resume all / Scan now). Tap ✏️ for ready-to-copy `/edit` examples.
-- `/edit 1 in toscana` then later `/edit 1 min 500 max 2000` — filters stack onto the existing search.
-- `/edit 1 anywhere` / `/edit 1 clear price` / `/edit 1 exact` — remove a filter or toggle title-only.
+- Bottom keyboard: **➕ New** · **Searches** · **Scan** · **Status** · **Help** (send `/start` to refresh).
+- Tap **➕ New** for guided setup with progress, Back, price presets, and a live draft.
+- Type a plain term (e.g. `iphone 15`) → **Continue setup** or **Add · All Italy**.
+- **Searches**: Pause / Edit / Delete per item (delete asks to confirm). Bulk actions at the bottom.
+- **Status**: Mute alerts, Pause/Resume all, Delete all… with confirmation.
+- `/help` opens topic buttons instead of one long wall of text.
+- `/edit 1 in toscana` then `/edit 1 min 500` — filters stack onto the existing search.
 - `/add exact <term>` still works as an alias of `/exact`.
 - Use `/exact` when broad search is too noisy (Subito *cerca solo nel titolo* / `qso=true`).
 - Use `in toscana` (or any name from `/regions`) to search in one region only (`r=` in the API).
