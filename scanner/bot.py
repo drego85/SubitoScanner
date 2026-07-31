@@ -60,10 +60,10 @@ class TelegramBot:
         self._register_bot_meta()
         updates = self.notifier.get_updates(self.state.last_update_id + 1)
         for update in updates:
+            # persist offset before handling so a long command cannot replay the update
             self.state.last_update_id = update["update_id"]
-            self._process_update(update)
-        if updates:
             self.state.save()
+            self._process_update(update)
 
     def run_forever(self):
         """persistent long-polling loop for real-time command responses."""
@@ -75,10 +75,10 @@ class TelegramBot:
                 self.state = self.state.load(seed_queries=self.state.queries)
                 updates = self.notifier.get_updates(self.state.last_update_id + 1, timeout=30)
                 for update in updates:
+                    # persist offset before handling so /scan (or a crash) cannot replay
                     self.state.last_update_id = update["update_id"]
-                    self._process_update(update)
-                if updates:
                     self.state.save()
+                    self._process_update(update)
             except Exception as e:
                 logging.error(f"bot service error: {e}")
                 time.sleep(5)
@@ -267,9 +267,12 @@ class TelegramBot:
 
         self._scanning = True
         try:
-            # reload from disk in case cron updated state since last poll
+            # reload queries/items from disk, but keep the telegram offset we just saved
+            saved_update_id = self.state.last_update_id
             self.state = State.load(seed_queries=self.state.queries)
+            self.state.last_update_id = max(self.state.last_update_id, saved_update_id)
             result = SubitoScanner(self.state, self.notifiers).run()
+            self.state.last_update_id = max(self.state.last_update_id, saved_update_id)
             self.state.save()
         except Exception as e:
             logging.error(f"manual scan failed: {e}")
