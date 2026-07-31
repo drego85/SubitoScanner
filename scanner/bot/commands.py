@@ -64,7 +64,7 @@ class CommandsMixin:
         for i, q in enumerate(self.state.queries):
             n = i + 1
             paused = self.state.is_query_disabled(q)
-            dot = "○" if paused else "●"
+            dot = "🔴" if paused else "🟢"
             title = html.escape(query_title(q))
             meta = html.escape(self._format_query_meta(q))
             count = len(self.state.items_by_query.get(q, []))
