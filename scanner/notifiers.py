@@ -28,7 +28,16 @@ class EmailNotifier:
         self.password = password
         self.to_addrs = to_addrs
 
-    def send(self, title: str, price: str, url: str, image: str, description: str = ""):
+    def send(
+        self,
+        title: str,
+        price: str,
+        url: str,
+        image: str,
+        description: str = "",
+        place: str = "",
+        posted: str = "",
+    ):
         try:
             msg = EmailMessage()
             msg["To"] = self.to_addrs
@@ -39,6 +48,10 @@ class EmailNotifier:
             body_lines = [title]
             if description:
                 body_lines.append(description)
+            if place:
+                body_lines.append(f"📍 {place}")
+            if posted:
+                body_lines.append(f"📅 {posted}")
             body_lines.extend([str(price), f"🔗 {url}"])
             if image:
                 body_lines.append(f"📷 {image}")
@@ -60,10 +73,23 @@ class SlackNotifier:
     def __init__(self, webhook_url: str):
         self.webhook_url = webhook_url
 
-    def send(self, title: str, price: str, url: str, image: str, description: str = ""):
+    def send(
+        self,
+        title: str,
+        price: str,
+        url: str,
+        image: str,
+        description: str = "",
+        place: str = "",
+        posted: str = "",
+    ):
         message_lines = [f"*{title}*"]
         if description:
             message_lines.append(_shorten(description, 500))
+        if place:
+            message_lines.append(f"📍 {place}")
+        if posted:
+            message_lines.append(f"📅 {posted}")
         message_lines.extend([f"🏷️ {price}", f"🔗 {url}"])
         if image:
             message_lines.append(f"📷 {image}")
@@ -89,17 +115,33 @@ class TelegramNotifier:
         self.chat_id = chat_id
         self._base_url = f"https://api.telegram.org/bot{token}"
 
-    def send(self, title: str, price: str, url: str, image: str, description: str = ""):
+    def send(
+        self,
+        title: str,
+        price: str,
+        url: str,
+        image: str,
+        description: str = "",
+        place: str = "",
+        posted: str = "",
+    ):
         safe_title = html.escape(title)
         safe_price = html.escape(str(price))
         desc_block = ""
         if description:
             desc_block = f"\n{html.escape(_shorten(description, _TELEGRAM_BODY_MAX))}\n"
+        meta_bits = []
+        if place:
+            meta_bits.append(f"📍 {html.escape(place)}")
+        if posted:
+            meta_bits.append(f"📅 {html.escape(posted)}")
+        meta = ("\n".join(meta_bits) + "\n") if meta_bits else ""
         caption = (
             f"🆕 <b>New on Subito</b>\n\n"
             f"<b>{safe_title}</b>"
             f"{desc_block}"
-            f"\n💰 {safe_price}\n"
+            f"\n{meta}"
+            f"💰 {safe_price}\n"
             f"🔗 {url}"
         )
         # photo captions are capped at 1024; fall back to text if still too long

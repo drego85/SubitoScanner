@@ -55,6 +55,8 @@ class SubitoScanner:
 
                 title = item.get("subject") or ""
                 body = (item.get("body") or "").strip()
+                place = self._extract_place(item.get("geo") or {})
+                posted = self._extract_date(item.get("dates") or {})
                 url = item["urls"]["default"]
                 price = self._extract_price(item["features"])
                 image = ""
@@ -66,9 +68,13 @@ class SubitoScanner:
                     print(f"[DRY-RUN] found: {title} - {url}")
                     if body:
                         print(f"          {body[:120]}…")
+                    print(f"          {place} · {posted}")
                 elif not self.state.paused:
                     for notifier in self.notifiers:
-                        notifier.send(title, price, url, image, body)
+                        notifier.send(
+                            title, price, url, image, body,
+                            place=place, posted=posted,
+                        )
 
                 self.state.add_item(params, item_id)
                 self.state.save()
@@ -118,3 +124,45 @@ class SubitoScanner:
             if feature["uri"] == "/price":
                 return feature["values"][0]["value"]
         return "N/A"
+
+    @staticmethod
+    def _extract_place(geo: dict) -> str:
+        """town (prov) · region, e.g. 'borgo a mozzano (lu) · toscana'."""
+        town = (geo.get("town") or {}).get("value") or ""
+        city = geo.get("city") or {}
+        prov = city.get("short_name") or city.get("value") or ""
+        region = (geo.get("region") or {}).get("value") or ""
+        bits = []
+        if town and prov:
+            bits.append(f"{town} ({prov})")
+        elif town:
+            bits.append(town)
+        elif city.get("value"):
+            bits.append(city["value"])
+        if region:
+            bits.append(region)
+        return " · ".join(bits)
+
+    @staticmethod
+    def _extract_date(dates: dict) -> str:
+        """prefer iso timestamp, fall back to display string."""
+        iso = dates.get("display_iso8601") or ""
+        if iso:
+            # 2026-07-31T17:41:38.598+0200 → 31/07/2026 17:41
+            try:
+                date_part, time_part = iso.split("T", 1)
+                y, m, d = date_part.split("-")
+                hm = time_part[:5]
+                return f"{d}/{m}/{y} {hm}"
+            except ValueError:
+                pass
+        raw = dates.get("display") or ""
+        if raw and " " in raw:
+            # 2026-07-31 17:41:38 → 31/07/2026 17:41
+            try:
+                date_part, time_part = raw.split(" ", 1)
+                y, m, d = date_part.split("-")
+                return f"{d}/{m}/{y} {time_part[:5]}"
+            except ValueError:
+                return raw
+        return raw
