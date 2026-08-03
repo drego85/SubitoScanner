@@ -53,7 +53,8 @@ class SubitoScanner:
                 if self.state.has_item(params, item_id):
                     continue
 
-                title = item["subject"]
+                title = item.get("subject") or ""
+                body = (item.get("body") or "").strip()
                 url = item["urls"]["default"]
                 price = self._extract_price(item["features"])
                 image = ""
@@ -63,9 +64,11 @@ class SubitoScanner:
 
                 if dry_run:
                     print(f"[DRY-RUN] found: {title} - {url}")
+                    if body:
+                        print(f"          {body[:120]}…")
                 elif not self.state.paused:
                     for notifier in self.notifiers:
-                        notifier.send(title, price, url, image)
+                        notifier.send(title, price, url, image, body)
 
                 self.state.add_item(params, item_id)
                 self.state.save()

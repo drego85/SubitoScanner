@@ -8,6 +8,18 @@ from email.message import EmailMessage
 
 from .constants import TIMEOUT
 
+# telegram photo captions max 1024 chars; keep body short so title/price/url fit
+_TELEGRAM_BODY_MAX = 400
+
+
+def _shorten(text: str, limit: int) -> str:
+    text = " ".join((text or "").split())
+    if len(text) <= limit:
+        return text
+    if limit <= 1:
+        return text[:limit]
+    return text[: limit - 1].rstrip() + "…"
+
 
 class EmailNotifier:
     def __init__(self, server: str, username: str, password: str, to_addrs):
@@ -16,7 +28,7 @@ class EmailNotifier:
         self.password = password
         self.to_addrs = to_addrs
 
-    def send(self, title: str, price: str, url: str, image: str):
+    def send(self, title: str, price: str, url: str, image: str, description: str = ""):
         try:
             msg = EmailMessage()
             msg["To"] = self.to_addrs
@@ -24,7 +36,10 @@ class EmailNotifier:
             msg["Subject"] = "Subito Scanner - New Item"
             msg["Date"] = email.utils.formatdate(localtime=True)
             msg["Message-ID"] = email.utils.make_msgid()
-            body_lines = [title, str(price), f"🔗 {url}"]
+            body_lines = [title]
+            if description:
+                body_lines.append(description)
+            body_lines.extend([str(price), f"🔗 {url}"])
             if image:
                 body_lines.append(f"📷 {image}")
             msg.set_content("\n".join(body_lines))
@@ -45,8 +60,11 @@ class SlackNotifier:
     def __init__(self, webhook_url: str):
         self.webhook_url = webhook_url
 
-    def send(self, title: str, price: str, url: str, image: str):
-        message_lines = [f"*{title}*", f"🏷️ {price}", f"🔗 {url}"]
+    def send(self, title: str, price: str, url: str, image: str, description: str = ""):
+        message_lines = [f"*{title}*"]
+        if description:
+            message_lines.append(_shorten(description, 500))
+        message_lines.extend([f"🏷️ {price}", f"🔗 {url}"])
         if image:
             message_lines.append(f"📷 {image}")
         message = "\n".join(message_lines)
@@ -71,16 +89,21 @@ class TelegramNotifier:
         self.chat_id = chat_id
         self._base_url = f"https://api.telegram.org/bot{token}"
 
-    def send(self, title: str, price: str, url: str, image: str):
+    def send(self, title: str, price: str, url: str, image: str, description: str = ""):
         safe_title = html.escape(title)
         safe_price = html.escape(str(price))
+        desc_block = ""
+        if description:
+            desc_block = f"\n{html.escape(_shorten(description, _TELEGRAM_BODY_MAX))}\n"
         caption = (
             f"🆕 <b>New on Subito</b>\n\n"
-            f"<b>{safe_title}</b>\n"
-            f"💰 {safe_price}\n"
+            f"<b>{safe_title}</b>"
+            f"{desc_block}"
+            f"\n💰 {safe_price}\n"
             f"🔗 {url}"
         )
-        if image:
+        # photo captions are capped at 1024; fall back to text if still too long
+        if image and len(caption) <= 1024:
             self._post_photo(self.chat_id, image, caption)
         else:
             self._post_message(self.chat_id, caption, disable_preview=True)
