@@ -15,3 +15,19 @@ BROWSER_HEADERS = {
     "Pragma": "no-cache",
     "Cache-Control": "no-cache",
 }
+
+# headers for hades.subito.it json api (cors-style; document headers can 403)
+API_HEADERS = {
+    "User-Agent": BROWSER_HEADERS["User-Agent"],
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": BROWSER_HEADERS["Accept-Language"],
+    "Referer": "https://www.subito.it/",
+    "Origin": "https://www.subito.it",
+    "DNT": "1",
+    "Connection": "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "Pragma": "no-cache",
+    "Cache-Control": "no-cache",
+}

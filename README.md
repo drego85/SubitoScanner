@@ -140,8 +140,8 @@ Define the initial queries in `Config.py`. They are used as a **seed** on the ve
 
 ```python
 queries = [
-    "q=raspberry+pi+4&t=s&shp=true&qso=true&sort=datedesc&lim=10&start=0",
-    "q=iphone+15&t=s&shp=true&qso=false&r=9&sort=datedesc&lim=10&start=0",  # r=9 → Toscana
+    "q=raspberry+pi+4&t=s&qso=true&sort=datedesc&lim=10&start=0",
+    "q=iphone+15&t=s&qso=false&r=9&sort=datedesc&lim=10&start=0",  # r=9 → Toscana
 ]
 ```
 
@@ -149,7 +149,7 @@ queries = [
 |-----------|-------------|
 | `q`       | Search term — replace spaces with `+` |
 | `t`       | Listing type: `s` sale · `g` gift · `u` rental · `h` vacation rental · `k` wanted |
-| `shp`     | Shipping available: `true` / `false` |
+| `shp`     | Shipping only (`true`/`false`). **Omit** for all listings — `true` hides most vehicles |
 | `qso`     | Title-only / exact keywords (`true` = Subito "cerca solo nel titolo") |
 | `r`       | Region id (optional). `9` = Toscana. Omit for all Italy. See table below or `/regions` in Telegram |
 | `ps`      | Minimum price in euros (optional) |

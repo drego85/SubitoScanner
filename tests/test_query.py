@@ -20,11 +20,16 @@ def test_build_and_label():
     assert "qso=true" in q
     assert "r=9" in q
     assert "ps=500" in q
+    assert "shp=" not in q  # shipping filter off by default (vehicles, etc.)
     label = query_label(q)
     assert "sh 125" in label
     assert "[exact]" in label
     assert "Toscana" in label
 
+
+def test_build_shipping_optional():
+    assert "shp=true" in build_query("iphone", shipping=True)
+    assert "shp=false" in build_query("iphone", shipping=False)
 
 def test_parse_search_args():
     term, rid, lo, hi, err = parse_search_args("wd red in toscana min 50 max 100".split())

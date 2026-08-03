@@ -178,16 +178,36 @@ class CommandsMixin:
             self._scanning = False
 
         new = result["new"]
-        if new == 0:
+        bits = [f"checked {result['queries']} active"]
+        if result.get("listed"):
+            bits.append(f"{result['listed']} on Subito")
+        if result.get("empty"):
+            bits.append(f"{result['empty']} with 0 hits")
+        if result.get("errors"):
+            bits.append(f"{result['errors']} failed")
+        detail = " · ".join(bits)
+
+        if result.get("errors") and new == 0 and not result.get("listed"):
+            self.notifier.reply(chat_id, (
+                f"⚠️ <b>Scan failed</b>\n"
+                f"Subito API error · {detail}"
+            ), reply_markup=self._after_action_kb())
+        elif new == 0:
+            hint = ""
+            if result.get("empty") == result.get("queries") and result.get("queries"):
+                hint = (
+                    "\n\nAll searches returned 0 ads — try broader match, "
+                    "widen price, or drop region (/edit)."
+                )
             self.notifier.reply(chat_id, (
                 f"✅ <b>Scan complete</b>\n"
-                f"No new listings · checked {result['queries']} active"
+                f"No new listings · {detail}{hint}"
             ), reply_markup=self._after_action_kb())
         else:
             self.notifier.reply(chat_id, (
                 f"✅ <b>Scan complete</b>\n"
                 f"<b>{new}</b> new listing{'s' if new != 1 else ''} "
-                f"({'muted' if self.state.paused else 'sent above'})"
+                f"({'muted' if self.state.paused else 'sent above'}) · {detail}"
             ), reply_markup=self._after_action_kb())
 
     def _cmd_plain_text(self, chat_id, text: str):

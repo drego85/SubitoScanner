@@ -141,16 +141,21 @@ def build_query(
     region: str = None,
     min_price: int = None,
     max_price: int = None,
+    shipping: bool = None,
 ) -> str:
     """build a default subito search query from a plain search term.
 
     exact=true sets qso=true (subito: search keywords in the listing title only).
     region is a subito region id (r=), e.g. '9' for Toscana. omit for all italy.
     min_price / max_price map to ps= / pe= (euros).
+    shipping=true/false maps to shp=; omit (default) to include all listings —
+    forcing shp=true hides most vehicles/large items that never ship.
     """
     q = term.strip().replace(" ", "+")
     exact_flag = "true" if exact else "false"
-    parts = [f"q={q}", "t=s", "shp=true", f"qso={exact_flag}"]
+    parts = [f"q={q}", "t=s", f"qso={exact_flag}"]
+    if shipping is not None:
+        parts.append(f"shp={'true' if shipping else 'false'}")
     if region:
         parts.append(f"r={region}")
     if min_price is not None:
@@ -286,10 +291,21 @@ def apply_query_patch(query_str: str, patch: dict) -> str:
     if min_price is not None and max_price is not None and min_price > max_price:
         raise ValueError("min price cannot be greater than max price")
 
+    # drop legacy shp=true unless the user explicitly wants shipping-only
+    shipping = None
+    if "shipping" in patch:
+        shipping = patch["shipping"]
+    else:
+        shp = query_param(query_str, "shp")
+        if shp == "false":
+            shipping = False
+        # shp=true is intentionally not preserved — it hid most vehicle ads
+
     return build_query(
         term,
         exact=exact,
         region=region,
         min_price=min_price,
         max_price=max_price,
+        shipping=shipping,
     )

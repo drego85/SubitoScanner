@@ -3,7 +3,7 @@ import requests
 
 import Config
 from .state import State
-from .constants import BROWSER_HEADERS, TIMEOUT
+from .constants import API_HEADERS, BROWSER_HEADERS, TIMEOUT
 from .query import query_title
 
 
@@ -13,7 +13,13 @@ class SubitoScanner:
         self.notifiers = notifiers
 
     def run(self, dry_run: bool = False) -> dict:
-        """scan all active queries. returns {new, queries, skipped}."""
+        """scan all active queries.
+
+        returns {new, queries, skipped, listed, empty, errors}.
+        listed = ads returned by subito (seen or not).
+        empty  = queries that returned 0 ads (often filters too strict).
+        errors = queries that failed http/json.
+        """
         if dry_run:
             print("\n⚙️  DRY-RUN MODE ENABLED: No notifications will be sent, results will be printed only.\n")
 
@@ -21,6 +27,9 @@ class SubitoScanner:
         new_count = 0
         scanned = 0
         skipped = 0
+        listed = 0
+        empty = 0
+        errors = 0
 
         for params in self.state.queries:
             if self.state.is_query_disabled(params):
@@ -29,7 +38,14 @@ class SubitoScanner:
                 continue
 
             scanned += 1
-            items = self._fetch_items(params, cookies)
+            items, err = self._fetch_items(params, cookies)
+            if err:
+                errors += 1
+                continue
+            if not items:
+                empty += 1
+                logging.info(f"no listings for: {query_title(params)}")
+            listed += len(items)
 
             # reverse so newest items appear at the bottom of the telegram chat
             for item in reversed(items):
@@ -55,7 +71,14 @@ class SubitoScanner:
                 self.state.save()
                 new_count += 1
 
-        return {"new": new_count, "queries": scanned, "skipped": skipped}
+        return {
+            "new": new_count,
+            "queries": scanned,
+            "skipped": skipped,
+            "listed": listed,
+            "empty": empty,
+            "errors": errors,
+        }
 
     # ── private ───────────────────────────────────────────────────────────────
 
@@ -68,17 +91,23 @@ class SubitoScanner:
             logging.error(f"error initializing session: {e}")
             return {}
 
-    def _fetch_items(self, params: str, cookies: dict) -> list:
+    def _fetch_items(self, params: str, cookies: dict):
+        """return (ads_list, error_message_or_none)."""
         try:
             response = requests.get(
                 f"{Config.subito_api_url}{params}",
                 cookies=cookies,
-                headers=BROWSER_HEADERS,
+                headers=API_HEADERS,
+                timeout=TIMEOUT,
             )
-            return response.json().get("ads", [])
+            if response.status_code != 200:
+                msg = f"http {response.status_code}"
+                logging.error(f"error fetching items for '{query_title(params)}': {msg}")
+                return [], msg
+            return response.json().get("ads", []), None
         except (requests.exceptions.RequestException, ValueError) as e:
             logging.error(f"error fetching items for '{query_title(params)}': {e}")
-            return []
+            return [], str(e)
 
     @staticmethod
     def _extract_price(features: list) -> str:

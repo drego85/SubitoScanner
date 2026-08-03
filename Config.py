@@ -31,15 +31,15 @@ subito_api_url = "https://hades.subito.it/v1/search/items?"
 # parameters:
 #   q    search term, spaces replaced with +
 #   t    listing type: s=sale, g=gift, u=rental, h=vacation rental, k=wanted
-#   shp  shipping available: true/false
 #   qso  title-only / exact keywords: true/false (subito "cerca solo nel titolo")
 #   r    region id (optional) — e.g. 9=Toscana; omit for all italy (/regions in telegram)
 #   ps   min price in euros (optional)
 #   pe   max price in euros (optional)
+#   shp  shipping only (optional) — omit for all listings; true hides most vehicles
 #   sort datedesc = newest first
 #   lim  results per page
 #   start pagination offset (use 0)
 queries = [
-    "q=raspberry+pi+4&t=s&shp=true&qso=true&sort=datedesc&lim=10&start=0",
-    "q=iphone+15&t=s&shp=true&qso=false&r=9&sort=datedesc&lim=10&start=0",  # toscana
+    "q=raspberry+pi+4&t=s&qso=true&sort=datedesc&lim=10&start=0",
+    "q=iphone+15&t=s&qso=false&r=9&sort=datedesc&lim=10&start=0",  # toscana
 ]

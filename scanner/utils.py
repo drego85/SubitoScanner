@@ -1,5 +1,5 @@
 """compat re-exports — prefer constants / regions / query for new code."""
-from .constants import BROWSER_HEADERS, TIMEOUT
+from .constants import API_HEADERS, BROWSER_HEADERS, TIMEOUT
 from .regions import REGION_IDS, resolve_region
 from .query import (
     apply_query_patch,
@@ -18,6 +18,7 @@ from .query import (
 )
 
 __all__ = [
+    "API_HEADERS",
     "BROWSER_HEADERS",
     "TIMEOUT",
     "REGION_IDS",
