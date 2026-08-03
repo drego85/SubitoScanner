@@ -37,6 +37,7 @@ class EmailNotifier:
         description: str = "",
         place: str = "",
         posted: str = "",
+        seller: str = "",
     ):
         try:
             msg = EmailMessage()
@@ -48,6 +49,8 @@ class EmailNotifier:
             body_lines = [title]
             if description:
                 body_lines.append(description)
+            if seller:
+                body_lines.append(f"👤 {seller}")
             if place:
                 body_lines.append(f"📍 {place}")
             if posted:
@@ -82,10 +85,13 @@ class SlackNotifier:
         description: str = "",
         place: str = "",
         posted: str = "",
+        seller: str = "",
     ):
         message_lines = [f"*{title}*"]
         if description:
             message_lines.append(_shorten(description, 500))
+        if seller:
+            message_lines.append(f"👤 {seller}")
         if place:
             message_lines.append(f"📍 {place}")
         if posted:
@@ -124,6 +130,7 @@ class TelegramNotifier:
         description: str = "",
         place: str = "",
         posted: str = "",
+        seller: str = "",
     ):
         safe_title = html.escape(title)
         safe_price = html.escape(str(price))
@@ -131,6 +138,8 @@ class TelegramNotifier:
         if description:
             desc_block = f"\n{html.escape(_shorten(description, _TELEGRAM_BODY_MAX))}\n"
         meta_bits = []
+        if seller:
+            meta_bits.append(f"👤 {html.escape(seller)}")
         if place:
             meta_bits.append(f"📍 {html.escape(place)}")
         if posted:

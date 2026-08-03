@@ -119,6 +119,8 @@ class TelegramBot(HelpMixin, WizardMixin, CallbackMixin, CommandsMixin, Formatti
             "regions":   lambda: self._cmd_regions(chat_id),
             "remove":    lambda: self._cmd_remove(chat_id, args),
             "wipe":      lambda: self._cmd_wipe(chat_id, args),
+            "flush":     lambda: self._cmd_flush(chat_id),
+            "forget":    lambda: self._cmd_flush(chat_id),
             "stop":      lambda: self._cmd_stop(chat_id, args),
             "stopall":   lambda: self._cmd_stop_all(chat_id),
             "resume":    lambda: self._cmd_resume(chat_id, args),

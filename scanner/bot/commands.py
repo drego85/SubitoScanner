@@ -93,7 +93,10 @@ class CommandsMixin:
             _btn("⏹ Pause all", "stopall"),
             _btn("▶️ Resume all", "resumeall"),
         ])
-        rows.append([_btn("🔎 Scan now", "scan")])
+        rows.append([
+            _btn("🔎 Scan now", "scan"),
+            _btn("🧹 Clear seen", "flush"),
+        ])
 
         return "\n".join(lines).rstrip(), {"inline_keyboard": rows}
 
@@ -402,6 +405,22 @@ class CommandsMixin:
             f"🗑 deleted <b>{label}</b>\n"
             "its history is gone. /list to see what's left."
         ))
+
+    def _cmd_flush(self, chat_id):
+        """forget all seen listing ids so the next scan re-notifies current ads."""
+        cleared = self.state.clear_history()
+        self.state.save()
+        if cleared == 0:
+            self.notifier.reply(chat_id, (
+                "🧹 <b>Already empty</b>\n"
+                "No seen listings stored — /scan will notify whatever Subito returns."
+            ), reply_markup=self._after_action_kb())
+            return
+        self.notifier.reply(chat_id, (
+            f"🧹 <b>Cleared {cleared}</b> seen listing"
+            f"{'s' if cleared != 1 else ''}\n\n"
+            "Searches are unchanged. Next /scan will treat current ads as new."
+        ), reply_markup=self._after_action_kb())
 
     def _cmd_wipe(self, chat_id, args: list):
         if not self.state.queries:

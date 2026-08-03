@@ -1,5 +1,7 @@
 import logging
+import re
 import requests
+from html import unescape
 
 import Config
 from .state import State
@@ -64,16 +66,20 @@ class SubitoScanner:
                 if images:
                     image = f"{images[0]['cdn_base_url']}?rule=images-auto"
 
+                seller = (item.get("advertiser") or {}).get("name") or ""
+                if not seller and (dry_run or not self.state.paused):
+                    seller = self._fetch_seller_name(url, cookies)
+
                 if dry_run:
                     print(f"[DRY-RUN] found: {title} - {url}")
                     if body:
                         print(f"          {body[:120]}…")
-                    print(f"          {place} · {posted}")
+                    print(f"          {place} · {posted} · seller={seller or '?'}")
                 elif not self.state.paused:
                     for notifier in self.notifiers:
                         notifier.send(
                             title, price, url, image, body,
-                            place=place, posted=posted,
+                            place=place, posted=posted, seller=seller,
                         )
 
                 self.state.add_item(params, item_id)
@@ -117,6 +123,31 @@ class SubitoScanner:
         except (requests.exceptions.RequestException, ValueError) as e:
             logging.error(f"error fetching items for '{query_title(params)}': {e}")
             return [], str(e)
+
+    def _fetch_seller_name(self, listing_url: str, cookies: dict) -> str:
+        """search api usually leaves advertiser.name empty — pull username from the listing page."""
+        try:
+            response = requests.get(
+                listing_url,
+                cookies=cookies,
+                headers=BROWSER_HEADERS,
+                timeout=TIMEOUT,
+            )
+            if response.status_code != 200:
+                return ""
+            html = response.text
+            m = re.search(r'"advertiserProfile"\s*:\s*\{[^}]*"username"\s*:\s*"([^"]+)"', html)
+            if not m:
+                # escaped form inside rsc payloads
+                m = re.search(r'advertiserProfile\\?"?\s*:?\s*\\?\{\\?"username\\?":\\?"([^"\\]+)', html)
+            if m:
+                return unescape(m.group(1)).strip()
+            m = re.search(r'__name[^>]*>\s*<a[^>]+/utente/\d+"[^>]*>([^<]+)</a>', html)
+            if m:
+                return unescape(m.group(1)).strip()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"error fetching seller name: {e}")
+        return ""
 
     @staticmethod
     def _extract_price(features: list) -> str:

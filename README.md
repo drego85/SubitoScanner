@@ -306,6 +306,7 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 | `/resumeall` | Resume **all** stopped searches (`/resume all` / `/startall` also work) |
 | `/remove <n>` | Delete search #n permanently |
 | `/wipe` | Delete **all** searches (inline confirmation) |
+| `/flush` | Clear **seen** listing history (searches stay; next scan re-notifies) |
 | `/pause` | Mute all alerts (scanning still runs) |
 | `/unpause` | Unmute alerts |
 

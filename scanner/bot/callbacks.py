@@ -58,6 +58,11 @@ class CallbackMixin:
             self._cmd_unpause(chat_id)
             return
 
+        if data == "flush":
+            self.notifier.answer_callback(cb_id, "Cleared")
+            self._cmd_flush(chat_id)
+            return
+
         if data == "wipe":
             self.notifier.answer_callback(cb_id)
             self._cmd_wipe(chat_id, [])

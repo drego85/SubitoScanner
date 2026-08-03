@@ -37,6 +37,7 @@ class FormattingMixin:
         """inline shortcuts shown after successful mutations."""
         return _inline(
             [_btn("📋 Searches", "list"), _btn("🔎 Scan now", "scan"), _btn("➕ New", "new")],
+            [_btn("🧹 Clear seen", "flush")],
         )
 
     def _status_actions_kb(self) -> dict:
@@ -44,7 +45,7 @@ class FormattingMixin:
         return _inline(
             [_btn("🔎 Scan now", "scan"), _btn("📋 Searches", "list"), _btn("➕ New", "new")],
             [mute, _btn("⏹ Pause all", "stopall"), _btn("▶️ Resume all", "resumeall")],
-            [_btn("🗑 Delete all…", "wipe")],
+            [_btn("🧹 Clear seen", "flush"), _btn("🗑 Delete all…", "wipe")],
         )
 
     def _short_list_preview(self) -> str:

@@ -17,6 +17,7 @@ _COMMANDS = [
     {"command": "resumeall", "description": "Resume all searches"},
     {"command": "remove",    "description": "Delete one search"},
     {"command": "wipe",      "description": "Delete all searches"},
+    {"command": "flush",     "description": "Clear seen listings (rescan as new)"},
     {"command": "pause",     "description": "Mute alerts"},
     {"command": "unpause",   "description": "Unmute alerts"},
 ]
@@ -34,11 +35,12 @@ _BTN_LIST = "📋 Searches"
 _BTN_SCAN = "🔎 Scan"
 _BTN_STATUS = "📡 Status"
 _BTN_HELP = "📖 Help"
+_BTN_FLUSH = "🧹 Clear seen"
 
 _MAIN_KEYBOARD = {
     "keyboard": [
         [{"text": _BTN_ADD}, {"text": _BTN_LIST}, {"text": _BTN_SCAN}],
-        [{"text": _BTN_STATUS}, {"text": _BTN_HELP}],
+        [{"text": _BTN_STATUS}, {"text": _BTN_FLUSH}, {"text": _BTN_HELP}],
     ],
     "resize_keyboard": True,
     "is_persistent": True,
@@ -60,6 +62,9 @@ _BUTTON_COMMANDS = {
     _BTN_HELP: "help",
     "Help": "help",
     "📖 Help": "help",
+    _BTN_FLUSH: "flush",
+    "Clear seen": "flush",
+    "🧹 Flush": "flush",
     # legacy bulk buttons still work if the old keyboard is cached
     "▶️ Resume all": "resumeall",
     "⏹ Stop all": "stopall",

@@ -162,6 +162,12 @@ class State:
         self.items_by_query = {}
         return count
 
+    def clear_history(self) -> int:
+        """forget all seen item ids; keep searches. returns how many ids were cleared."""
+        count = self.total_tracked()
+        self.items_by_query = {}
+        return count
+
     # ── item tracking ─────────────────────────────────────────────────────────
 
     def has_item(self, query: str, item_id: str) -> bool:

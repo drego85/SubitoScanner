@@ -43,6 +43,7 @@ class HelpMixin:
                 "<b>Searches & bulk</b>\n\n"
                 "• <b>Searches</b> — per-item Pause / Edit / Delete\n"
                 "• Pause all / Resume all — from Searches or Status\n"
+                "• <b>Clear seen</b> — forget seen ads; next scan re-notifies current ones\n"
                 "• Delete all — Status → Delete all… (asks confirmation)\n"
                 "• /stop 1 · /resume 1 · /remove 1 — by number"
             ),
@@ -51,6 +52,7 @@ class HelpMixin:
                 "• /pause — mute notifications (scanning continues)\n"
                 "• /unpause — turn alerts back on\n"
                 "• <b>Scan</b> — check Subito immediately\n"
+                "• <b>Clear seen</b> / /flush — empty seen history, then scan again\n"
                 "• Cron still runs on your schedule in the background"
             ),
             "regions": (
