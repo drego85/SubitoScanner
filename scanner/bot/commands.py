@@ -265,7 +265,7 @@ class CommandsMixin:
                 ))
                 return
 
-        term_args, region_id, min_price, max_price, err = parse_search_args(args)
+        term_args, region_id, min_price, max_price, since, err = parse_search_args(args)
         if err:
             hint = "\nsend /regions for valid names." if "region" in err else ""
             self.notifier.reply(chat_id, f"❓ {html.escape(err)}.{hint}")
@@ -285,6 +285,7 @@ class CommandsMixin:
             region=region_id,
             min_price=min_price,
             max_price=max_price,
+            since=since,
         )
         safe = html.escape(term)
         mode = "exact / title-only" if exact else "broad"
@@ -325,6 +326,8 @@ class CommandsMixin:
             f"• <code>/edit {n} 500-2000</code>\n"
             f"• <code>/edit {n} exact</code> · <code>/edit {n} broad</code>\n"
             f"• <code>/edit {n} anywhere</code> · <code>/edit {n} clear price</code>\n"
+            f"• <code>/edit {n} since 01/08/2026</code> · <code>/edit {n} last 7d</code>\n"
+            f"• <code>/edit {n} clear since</code> · <code>/edit {n} anydate</code>\n"
             f"• <code>/edit {n} sh 150</code> — rename\n\n"
             "<i>History resets after an edit.</i>"
         )

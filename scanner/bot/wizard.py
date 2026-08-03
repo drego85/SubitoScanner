@@ -3,7 +3,9 @@ import html
 from ..query import (
     build_query,
     format_price_range,
+    format_since,
     parse_search_args,
+    parse_since_value,
 )
 from ..regions import REGION_IDS, resolve_region
 from .keyboards import (
@@ -40,9 +42,9 @@ class WizardMixin:
             return ""
         where = REGION_IDS.get(w["region"], "All Italy") if w.get("region") else "All Italy"
         price = format_price_range(w.get("min_price"), w.get("max_price")) or "any price"
+        since = format_since(w.get("since")) or "any date"
         mode = "exact" if w.get("exact") else "broad"
-        # show mode only once chosen (confirm / after exact step)
-        bits = [html.escape(where), html.escape(price)]
+        bits = [html.escape(where), html.escape(price), html.escape(since)]
         if w.get("step") in ("confirm",) or w.get("exact_set"):
             bits.append(mode)
         return (
@@ -69,6 +71,7 @@ class WizardMixin:
             "region": None,
             "min_price": None,
             "max_price": None,
+            "since": None,
             "exact": False,
             "exact_set": False,
             "history": [],
@@ -156,10 +159,27 @@ class WizardMixin:
         else:
             self.notifier.reply(chat_id, text, reply_markup=markup)
 
+    def _wizard_ask_since(self, chat_id, edit_message_id=None):
+        self._wizard["step"] = "since"
+        text = (
+            f"{self._wizard_header(4, 'Posted from when?')}"
+            f"{self._wizard_draft()}\n\n"
+            "Optional — only keep ads posted on/after a date.\n"
+            "Or type e.g. <code>01/08/2026</code> / <code>2026-08-01</code>."
+        )
+        markup = self._wizard_nav(
+            [_btn("📅 Today", "wiz:since:today"), _btn("🗓 Last 7 days", "wiz:since:7d")],
+            [_btn("📆 Last 30 days", "wiz:since:30d"), _btn("⏭ Any date", "wiz:since:skip")],
+        )
+        if edit_message_id:
+            self.notifier.edit_message(chat_id, edit_message_id, text, reply_markup=markup)
+        else:
+            self.notifier.reply(chat_id, text, reply_markup=markup)
+
     def _wizard_ask_exact(self, chat_id, edit_message_id=None):
         self._wizard["step"] = "exact"
         text = (
-            f"{self._wizard_header(4, 'Match mode')}"
+            f"{self._wizard_header(5, 'Match mode')}"
             f"{self._wizard_draft()}\n\n"
             "<b>Broad</b> — more results\n"
             "<b>Exact</b> — title-only (Subito “cerca solo nel titolo”)"
@@ -207,6 +227,7 @@ class WizardMixin:
             region=w.get("region"),
             min_price=w.get("min_price"),
             max_price=w.get("max_price"),
+            since=w.get("since"),
         )
         safe = html.escape(w["term"])
         meta = html.escape(self._format_query_meta(query))
@@ -233,7 +254,6 @@ class WizardMixin:
     def _wizard_go_back(self, chat_id, message_id):
         step = self._wizard.get("step")
         if step in ("region",):
-            # back to term
             self._wizard["term"] = None
             self._wizard["step"] = "term"
             self.notifier.edit_message(chat_id, message_id, (
@@ -242,8 +262,10 @@ class WizardMixin:
             ), reply_markup=self._wizard_nav(back=False))
         elif step in ("price", "price_input"):
             self._wizard_ask_region(chat_id, edit_message_id=message_id)
-        elif step == "exact":
+        elif step == "since":
             self._wizard_ask_price(chat_id, edit_message_id=message_id)
+        elif step == "exact":
+            self._wizard_ask_since(chat_id, edit_message_id=message_id)
         elif step == "confirm":
             self._wizard["exact_set"] = False
             self._wizard_ask_exact(chat_id, edit_message_id=message_id)
@@ -280,7 +302,7 @@ class WizardMixin:
             return
 
         if step in ("price_input", "price"):
-            _, region_id, min_price, max_price, err = parse_search_args(text.split())
+            _, region_id, min_price, max_price, _, err = parse_search_args(text.split())
             if err:
                 self.notifier.reply(chat_id, (
                     f"{html.escape(err)}.\n"
@@ -301,6 +323,20 @@ class WizardMixin:
                 self._wizard["region"] = region_id
             self._wizard["min_price"] = min_price
             self._wizard["max_price"] = max_price
+            self._wizard_ask_since(chat_id)
+            return
+
+        if step == "since":
+            parsed = parse_since_value(text.strip())
+            if not parsed:
+                self.notifier.reply(chat_id, (
+                    "Invalid date. Use <code>01/08/2026</code>, <code>2026-08-01</code>, "
+                    "or tap a button."
+                ), reply_markup=self._wizard_nav(
+                    [_btn("📅 Today", "wiz:since:today"), _btn("⏭ Any date", "wiz:since:skip")],
+                ))
+                return
+            self._wizard["since"] = parsed
             self._wizard_ask_exact(chat_id)
             return
 
@@ -362,7 +398,7 @@ class WizardMixin:
                 self._wizard["min_price"] = None
             self._wizard["max_price"] = hi
             self.notifier.answer_callback(cb_id, _PRICE_PRESETS[int(idx_s)][0])
-            self._wizard_ask_exact(chat_id, edit_message_id=message_id)
+            self._wizard_ask_since(chat_id, edit_message_id=message_id)
             return
 
         if action == "price":
@@ -371,12 +407,29 @@ class WizardMixin:
                 self._wizard["min_price"] = None
                 self._wizard["max_price"] = None
                 self.notifier.answer_callback(cb_id, "Any price")
-                self._wizard_ask_exact(chat_id, edit_message_id=message_id)
+                self._wizard_ask_since(chat_id, edit_message_id=message_id)
             elif val == "set":
                 self.notifier.answer_callback(cb_id)
                 self._wizard_ask_price_input(chat_id, edit_message_id=message_id)
             else:
                 self.notifier.answer_callback(cb_id, "Unknown", show_alert=True)
+            return
+
+        if action == "since":
+            val = parts[2] if len(parts) > 2 else "skip"
+            if val == "skip":
+                self._wizard["since"] = None
+                self.notifier.answer_callback(cb_id, "Any date")
+            elif val == "today":
+                self._wizard["since"] = parse_since_value("today")
+                self.notifier.answer_callback(cb_id, "Today")
+            elif val in ("7d", "30d"):
+                self._wizard["since"] = parse_since_value(val)
+                self.notifier.answer_callback(cb_id, f"Last {val[:-1]} days")
+            else:
+                self.notifier.answer_callback(cb_id, "Unknown", show_alert=True)
+                return
+            self._wizard_ask_exact(chat_id, edit_message_id=message_id)
             return
 
         if action == "exact":

@@ -84,8 +84,8 @@ _PRICE_PRESETS = [
 ]
 
 
-def _step_bar(current: int, total: int = 4) -> str:
-    """compact progress indicator, e.g. ●●○○  2/4."""
+def _step_bar(current: int, total: int = 5) -> str:
+    """compact progress indicator, e.g. ●●○○○  2/5."""
     dots = "".join("●" if i <= current else "○" for i in range(1, total + 1))
     return f"{dots}  <b>{current}/{total}</b>"
 

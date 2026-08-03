@@ -2,11 +2,12 @@ import html
 
 from ..query import (
     format_price_range,
+    format_since,
     is_exact_query,
     query_label,
     query_price_range,
     query_region_name,
-    query_title,
+    query_since,
 )
 from .keyboards import _btn, _inline
 
@@ -19,6 +20,9 @@ class FormattingMixin:
         price = format_price_range(*query_price_range(q))
         if price:
             bits.append(price)
+        since = format_since(query_since(q))
+        if since:
+            bits.append(f"from {since}")
         if is_exact_query(q):
             bits.append("exact")
         return " · ".join(bits)
@@ -27,7 +31,7 @@ class FormattingMixin:
         return (
             "📭 <b>No searches yet</b>\n\n"
             "Create one in under a minute — I'll ask for the term, "
-            "region, price, and match mode."
+            "region, price, date, and match mode."
         )
 
     def _empty_searches_kb(self) -> dict:

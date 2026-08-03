@@ -296,6 +296,7 @@ Open the chat with your bot and tap **/** (or type a command). The menu is regis
 | `/add <term> in <region>` | Limit where to look, e.g. `/add wd red in toscana` |
 | `/add <term> min <n> max <n>` | Price filter in €, e.g. `/add sh 125 min 500 max 2000` |
 | `/add <term> <min>-<max>` | Price shorthand, e.g. `/add sh 125 500-2000 in toscana` |
+| `/add <term> since <date>` | Only ads from that day on (DD/MM/YYYY). Also `last 7d` |
 | `/exact <term> [in <region>]` | Title-only / exact keywords, e.g. `/exact wd red in toscana` |
 | `/edit <n> [filters…]` | Change an existing search — keep the term, add/change filters |
 | `/cancel` | Abort the guided add wizard |

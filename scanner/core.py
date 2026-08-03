@@ -6,7 +6,7 @@ from html import unescape
 import Config
 from .state import State
 from .constants import API_HEADERS, BROWSER_HEADERS, TIMEOUT
-from .query import query_title
+from .query import query_title, api_query, query_since, item_matches_since
 
 
 class SubitoScanner:
@@ -40,10 +40,13 @@ class SubitoScanner:
                 continue
 
             scanned += 1
-            items, err = self._fetch_items(params, cookies)
+            since = query_since(params)
+            items, err = self._fetch_items(api_query(params), cookies)
             if err:
                 errors += 1
                 continue
+            if since:
+                items = [it for it in items if item_matches_since(it, since)]
             if not items:
                 empty += 1
                 logging.info(f"no listings for: {query_title(params)}")

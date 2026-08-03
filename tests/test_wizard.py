@@ -25,6 +25,8 @@ def test_wizard_commit_builds_query():
     assert bot._wizard["step"] == "region"
     bot._wizard_handle_callback("1", "cb", "wiz:region:9", None)
     bot._wizard_handle_callback("1", "cb", "wiz:preset:1", None)
+    assert bot._wizard["step"] == "since"
+    bot._wizard_handle_callback("1", "cb", "wiz:since:skip", None)
     bot._wizard_handle_callback("1", "cb", "wiz:exact:1", None)
     assert bot._wizard["step"] == "confirm"
     bot._wizard_commit("1")
