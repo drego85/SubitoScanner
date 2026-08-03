@@ -9,7 +9,8 @@ from email.message import EmailMessage
 from .constants import TIMEOUT
 
 # telegram photo captions max 1024 chars; keep body short so title/price/url fit
-_TELEGRAM_BODY_MAX = 400
+_TELEGRAM_BODY_MAX = 280
+_TELEGRAM_ATTRS_MAX = 350
 
 
 def _shorten(text: str, limit: int) -> str:
@@ -19,6 +20,29 @@ def _shorten(text: str, limit: int) -> str:
     if limit <= 1:
         return text[:limit]
     return text[: limit - 1].rstrip() + "…"
+
+
+def _attrs_block(attributes: str, limit: int = _TELEGRAM_ATTRS_MAX) -> str:
+    """trim attribute lines to fit telegram captions."""
+    text = (attributes or "").strip()
+    if not text:
+        return ""
+    if len(text) <= limit:
+        return text
+    lines = []
+    used = 0
+    for line in text.splitlines():
+        extra = len(line) + (1 if lines else 0)
+        if used + extra > limit - 1:
+            break
+        lines.append(line)
+        used += extra
+    if not lines:
+        return _shorten(text, limit)
+    out = "\n".join(lines)
+    if out != text:
+        out = out.rstrip() + "…"
+    return out
 
 
 class EmailNotifier:
@@ -38,6 +62,7 @@ class EmailNotifier:
         place: str = "",
         posted: str = "",
         seller: str = "",
+        attributes: str = "",
     ):
         try:
             msg = EmailMessage()
@@ -49,6 +74,8 @@ class EmailNotifier:
             body_lines = [title]
             if description:
                 body_lines.append(description)
+            if attributes:
+                body_lines.append(attributes)
             if seller:
                 body_lines.append(f"👤 {seller}")
             if place:
@@ -86,10 +113,13 @@ class SlackNotifier:
         place: str = "",
         posted: str = "",
         seller: str = "",
+        attributes: str = "",
     ):
         message_lines = [f"*{title}*"]
         if description:
             message_lines.append(_shorten(description, 500))
+        if attributes:
+            message_lines.append(attributes)
         if seller:
             message_lines.append(f"👤 {seller}")
         if place:
@@ -131,12 +161,15 @@ class TelegramNotifier:
         place: str = "",
         posted: str = "",
         seller: str = "",
+        attributes: str = "",
     ):
         safe_title = html.escape(title)
         safe_price = html.escape(str(price))
         desc_block = ""
         if description:
             desc_block = f"\n{html.escape(_shorten(description, _TELEGRAM_BODY_MAX))}\n"
+        attrs = _attrs_block(attributes)
+        attrs_block = f"\n{html.escape(attrs)}\n" if attrs else ""
         meta_bits = []
         if seller:
             meta_bits.append(f"👤 {html.escape(seller)}")
@@ -149,6 +182,7 @@ class TelegramNotifier:
             f"🆕 <b>New on Subito</b>\n\n"
             f"<b>{safe_title}</b>"
             f"{desc_block}"
+            f"{attrs_block}"
             f"\n{meta}"
             f"💰 {safe_price}\n"
             f"🔗 {url}"

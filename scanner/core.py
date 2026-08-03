@@ -63,7 +63,9 @@ class SubitoScanner:
                 place = self._extract_place(item.get("geo") or {})
                 posted = self._extract_date(item.get("dates") or {})
                 url = item["urls"]["default"]
-                price = self._extract_price(item["features"])
+                features = item.get("features") or []
+                price = self._extract_price(features)
+                attrs = self._format_attributes(self._extract_attributes(features))
                 image = ""
                 images = item.get("images") or []
                 if images:
@@ -77,12 +79,15 @@ class SubitoScanner:
                     print(f"[DRY-RUN] found: {title} - {url}")
                     if body:
                         print(f"          {body[:120]}…")
+                    if attrs:
+                        print(f"          {attrs.replace(chr(10), ' | ')}")
                     print(f"          {place} · {posted} · seller={seller or '?'}")
                 elif not self.state.paused:
                     for notifier in self.notifiers:
                         notifier.send(
                             title, price, url, image, body,
                             place=place, posted=posted, seller=seller,
+                            attributes=attrs,
                         )
 
                 self.state.add_item(params, item_id)
@@ -155,9 +160,80 @@ class SubitoScanner:
     @staticmethod
     def _extract_price(features: list) -> str:
         for feature in features:
-            if feature["uri"] == "/price":
-                return feature["values"][0]["value"]
+            if feature.get("uri") == "/price":
+                vals = feature.get("values") or []
+                if vals:
+                    return vals[0].get("value") or "N/A"
         return "N/A"
+
+    # noise / already shown elsewhere — skip in attribute list
+    _SKIP_FEATURE_URIS = {
+        "/price",
+        "/vat_deductible",
+        "/item_shippable",
+        "/item_shipping_allowed",
+        "/item_shipping_cost_tuttosubito",
+        "/item_shipping_package_size",
+        "/item_shipping_type",
+        "/shipping_carriers",
+    }
+
+    @classmethod
+    def _extract_attributes(cls, features: list) -> list:
+        """category-agnostic (label, value) pairs from hades features.
+
+        expands pack features (marca/modello/versione, …) and skips shipping/price noise.
+        """
+        uris = {f.get("uri") for f in features or []}
+        skip = set(cls._SKIP_FEATURE_URIS)
+        # prefer precise fields when both range + scalar (or year + register) exist
+        if "/mileage_scalar" in uris:
+            skip.add("/mileage")
+        if "/register_date" in uris:
+            skip.add("/year")
+            skip.add("/month")
+
+        rows = []
+        seen = set()
+        for feature in features or []:
+            uri = feature.get("uri") or ""
+            if uri in skip:
+                continue
+
+            if feature.get("type") == "pack":
+                for val in feature.get("values") or []:
+                    label = (val.get("label") or "").strip()
+                    value = (val.get("value") or "").strip()
+                    if not label or not value:
+                        continue
+                    if value.lower().startswith("altro"):
+                        continue
+                    key = label.casefold()
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    rows.append((label, value))
+                continue
+
+            label = (feature.get("label") or "").strip()
+            vals = feature.get("values") or []
+            if not label or not vals:
+                continue
+            value = (vals[0].get("value") or "").strip()
+            if not value:
+                continue
+            key = label.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append((label, value))
+        return rows
+
+    @staticmethod
+    def _format_attributes(rows: list) -> str:
+        if not rows:
+            return ""
+        return "\n".join(f"• {label}: {value}" for label, value in rows)
 
     @staticmethod
     def _extract_place(geo: dict) -> str:
