@@ -1,0 +1,19 @@
+# secrets — never commit
+.env
+
+# runtime / local state
+scanner_state.json
+subito_items.txt
+subito_items.txt.bak
+
+# logs (active + rotated backups: .log.1, .log.2, ...)
+*.log
+*.log.*
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
